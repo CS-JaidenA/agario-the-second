@@ -1,39 +1,61 @@
-class Entity {
-    /** @type {number} */
-    x;
+/**
+ * @typedef {object} Blob
+ * @property {number} x
+ * @property {number} y
+ * @property {number} radius
+ * @property {string} colour
+ */
 
-    /** @type {number} */
-    y;
+class Blob {
+	/** @type {number} */
+	x;
 
-    /**
-     * @param {number} x
-     * @param {number} y
-     */
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-    }
+	/** @type {number} */
+	y;
+
+	/** @type {number} */
+	radius;
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} radius
+	 */
+	constructor(x, y, radius) {
+		this.x = x;
+		this.y = y;
+
+		this.radius = radius;
+	}
 }
 
-class Player extends Entity {
-    /** @type {number} */
-    radius;
+class Player {
+	/** @type {Blob[]} */
+	blobs = [];
 
-    /** @type {string} */
-    colour;
+	/** @type {string} */
+	colour;
 
-    /**
-     * @param {number} x
-     * @param {number} y
-     * @param {number} radius
-     * @param {string} colour
-     */
-    constructor(x, y, radius, colour) {
-        super(x, y);
+	split() {
+		this.blobs.forEach(blob => {
+			blob.radius /= 2;
+			this.blobs.push(new Blob(blob.x + 100, blob.y + 100, blob.radius));
+		});
+	}
 
-        this.radius = radius;
-        this.colour = colour;
-    }
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} radius
+	 */
+	constructor(x, y, radius, colour) {
+		this.blobs.push(new Blob(x, y, radius));
+		this.colour = colour;
+
+		addEventListener("keydown", e => {
+			if (e.code == "Space") this.split();
+		});
+	}
 }
 
 export default { Player };

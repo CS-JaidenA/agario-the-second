@@ -28,30 +28,32 @@ function update() {
 	const mouseX = mouse.x * canvas.width;
 	const mouseY = mouse.y * canvas.height;
 
-	// distance between player and mouse coordinates
+	for (let blob of player.blobs) {
+		// distance between blob and mouse coordinates
 
-	const distanceX = Math.abs(mouseX - player.x);
-	const distanceY = Math.abs(mouseY - player.y);
+		const distanceX = Math.abs(mouseX - blob.x);
+		const distanceY = Math.abs(mouseY - blob.y);
 
-	// speeds adjusted so player coords meet mouse coords at same time
+		// speeds adjusted so blob coords meet mouse coords at same time
 
-	let adjustedSpeedX;
-	let adjustedSpeedY;
+		let adjustedSpeedX;
+		let adjustedSpeedY;
 
-	// stop moving the player if the player is about centered
+		// stop moving the player if the player is about centered
 
-	if (distanceX < speed && distanceY < speed) {
-		adjustedSpeedX = 0;
-		adjustedSpeedY = 0;
-	} else {
-		adjustedSpeedX = distanceX > distanceY ? speed : speed * distanceX / distanceY;
-		adjustedSpeedY = distanceY > distanceX ? speed : speed * distanceY / distanceX;
+		if (distanceX < 2 && distanceY < 2) {
+			adjustedSpeedX = 0;
+			adjustedSpeedY = 0;
+		} else {
+			adjustedSpeedX = distanceX > distanceY ? speed : speed * distanceX / distanceY;
+			adjustedSpeedY = distanceY > distanceX ? speed : speed * distanceY / distanceX;
+		}
+
+		blob.x += adjustedSpeedX * (mouse.x * canvas.width > blob.x ? 1 : -1);
+		blob.y += adjustedSpeedY * (mouse.y * canvas.height > blob.y ? 1 : -1);
+
+		draw.circle(blob.x, blob.y, blob.radius, player.colour);
 	}
-
-	player.x += adjustedSpeedX * (mouse.x * canvas.width > player.x ? 1 : -1);
-	player.y += adjustedSpeedY * (mouse.y * canvas.height > player.y ? 1 : -1);
-
-	draw.circle(player.x, player.y, player.radius, player.colour);
 
 	requestAnimationFrame(update);
 }
