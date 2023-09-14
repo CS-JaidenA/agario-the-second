@@ -3,7 +3,7 @@ const colours = [
 ];
 
 /**
- * @returns {string} 
+ * @returns {string}
  */
 function random() {
     return colours[(Math.floor(Math.random() * colours.length))];

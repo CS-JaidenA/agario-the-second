@@ -1,7 +1,7 @@
 /**
  * @namespace
- * @property {number} x
- * @property {number} y
+ * @property {number} x - mouse clientX coordinate as decimal percentage
+ * @property {number} y - mouse clientY coordinate as decimal percentage
  */
 let mouse = {
     x: 0,
@@ -9,8 +9,10 @@ let mouse = {
 };
 
 addEventListener("mousemove", function({clientX, clientY}) {
-    mouse.x = clientX;
-    mouse.y = clientY;
+    // save coordinates as decimal percentages
+
+    mouse.x = clientX / document.documentElement.clientWidth;
+    mouse.y = clientY / document.documentElement.clientHeight;
 });
 
 export default mouse;

@@ -6,7 +6,6 @@ class Entity {
     y;
 
     /**
-     * 
      * @param {number} x
      * @param {number} y
      */
@@ -24,11 +23,10 @@ class Player extends Entity {
     colour;
 
     /**
-     * 
-     * @param {number} x 
-     * @param {number} y 
-     * @param {number} radius 
-     * @param {string} colour 
+     * @param {number} x
+     * @param {number} y
+     * @param {number} radius
+     * @param {string} colour
      */
     constructor(x, y, radius, colour) {
         super(x, y);

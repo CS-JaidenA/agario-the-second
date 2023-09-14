@@ -1,19 +1,19 @@
 let ctx;
 
 /**
- * @param {CanvasRenderingContext2D} context 
- * @returns { undefined }
+ * @param {CanvasRenderingContext2D} context
+ * @returns {undefined}
  */
 function init(context) {
     ctx = context;
 }
 
 /**
- * @param {number} x 
- * @param {number} y 
- * @param {number} radius 
+ * @param {number} x
+ * @param {number} y
+ * @param {number} radius
  * @param {string} colour
- * @returns { undefined }
+ * @returns {undefined}
  */
 function circle(x, y, radius, colour) {
     ctx.beginPath();
