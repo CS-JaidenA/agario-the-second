@@ -24,22 +24,34 @@ function init(canvas, context) {
 	draw.init(ctx);
 }
 
-/**
- * @typedef {object} Blob
- * @property {number} x
- * @property {number} y
- * @property {number} radius
- * @property {string} colour
- */
-
 class Blob {
-	/** @type {object} */
-	x = {};
+	/**
+	 * @namespace
+	 * @property {number} pos
+	 * @property {number} speed
+	 * @property {number} momentum
+	 * @property {number} direction
+	 */
+	x = {
+		pos: 0,
+		speed: 0,
+		momentum: 0,
+		direction: 0,
+	};
 
-	/** @type {object} */
-	y = {};
-
-	id;
+	/**
+	 * @namespace
+	 * @property {number} pos
+	 * @property {number} speed
+	 * @property {number} momentum
+	 * @property {number} direction
+	 */
+	y = {
+		pos: 0,
+		speed: 0,
+		momentum: 0,
+		direction: 0,
+	};
 
 	/** @type {number} */
 	radius;
@@ -59,11 +71,9 @@ class Blob {
 
 		this.x.momentum = xMomentum;
 		this.y.momentum = yMomentum;
-
-		this.id = crypto.randomUUID();
 	}
 
-	static MOMENTUM			= 28;
+	static MOMENTUM			= 40;
 	static MIN_BLOB_SIZE	= 50 ;
 }
 
@@ -83,6 +93,7 @@ class Player {
 			if (blob.radius / 2 < Blob.MIN_BLOB_SIZE) return;
 
 			blob.radius /= 2;
+
 			this.blobs.push(new Blob(
 				blob.x.pos,
 				blob.y.pos,
@@ -90,8 +101,8 @@ class Player {
 
 				// adjust momentum to have same ratio as speed for correct angle
 
-				blob.x.speed > blob.y.speed ? Blob.MOMENTUM : blob.x.speed / blob.y.speed * Blob.MOMENTUM,
-				blob.y.speed > blob.x.speed ? Blob.MOMENTUM : blob.y.speed / blob.x.speed * Blob.MOMENTUM,
+				blob.x.direction * Math.round(blob.x.speed > blob.y.speed ? Blob.MOMENTUM : blob.x.speed / blob.y.speed * Blob.MOMENTUM),
+				blob.y.direction * Math.round(blob.y.speed > blob.x.speed ? Blob.MOMENTUM : blob.y.speed / blob.x.speed * Blob.MOMENTUM),
 			));
 		});
 	}
@@ -120,43 +131,43 @@ class Player {
 				blob.y.speed = 0;
 			}
 
-			// add momentum
+			// determine direction
 
-			blob.x.speed += blob.x.momentum;
-			blob.y.speed += blob.y.momentum;
+			blob.x.direction = mouseX > blob.x.pos ? 1 : -1;
+			blob.y.direction = mouseY > blob.y.pos ? 1 : -1;
+
+			// move blob by speed and add momentum
+
+			blob.x.pos += blob.x.speed * blob.x.direction + blob.x.momentum;
+			blob.y.pos += blob.y.speed * blob.y.direction + blob.y.momentum;
+
+			draw.circle(blob.x.pos, blob.y.pos, blob.radius, this.colour);
 
 			// decrease momentum
 			// set to 0 if applicable in case momentum was a decimal
 
-			if (blob.x.momentum > 0)
-				blob.x.momentum--;
-			else blob.x.momentum = 0;
+			if (blob.x.momentum > -1 && blob.x.momentum < 1)
+				blob.x.momentum = 0;
+			else blob.x.momentum -= Math.sign(blob.x.momentum); // 1 reverse of x direction
 
-			if (blob.y.momentum > 0)
-				blob.y.momentum--;
-			else blob.y.momentum = 0;
-
-			// move blob
-
-			blob.x.pos += blob.x.speed * (mouseX > blob.x.pos ? 1 : -1);
-			blob.y.pos += blob.y.speed * (mouseY > blob.y.pos ? 1 : -1);
-
-			draw.circle(blob.x.pos, blob.y.pos, blob.radius, this.colour);
+			if (blob.y.momentum > -1 && blob.y.momentum < 1)
+				blob.y.momentum = 0;
+			else blob.y.momentum -= Math.sign(blob.y.momentum); // 1 reverse of y direction
 
 			// write size
 
 			const size = String(blob.radius);
 			const metrics = ctx.measureText(size);
 
-			ctx.font		= "48px serif";
+			ctx.font		= "64px Ubuntu";
 			ctx.fillStyle	= "white";
 			ctx.strokeStyle = "black";
 
-			ctx.fillText(
-				String(blob.radius),
-				blob.x.pos - (metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight) / 2,
-				blob.y.pos + (metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) / 2
-			);
+			const textX = blob.x.pos - (metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight) / 2;
+			const textY = blob.y.pos + (metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) / 2;
+
+			ctx.fillText(size, textX, textY);
+			ctx.strokeText(size, textX, textY);
 		});
 	}
 
