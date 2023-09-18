@@ -54,27 +54,52 @@ class Blob {
 	};
 
 	/** @type {number} */
-	radius;
+	#area;
+
+	/** @type {number} */
+	#points;
+
+	/** @type {number} */
+	#radius;
+
+	get area() {
+		return this.#area;
+	}
+
+	get points() {
+		return this.#points;
+	}
+
+	get radius() {
+		return this.#radius;
+	}
+
+	set points(points) {
+		this.#points	= points;
+
+		this.#area		= points * Math.PI * 50;
+		this.#radius	= Math.sqrt(this.#area / Math.PI);
+	}
 
 	/**
 	 * @param {number} x
 	 * @param {number} y
-	 * @param {number} radius
+	 * @param {number} points
 	 * @param {number} xMomentum
 	 * @param {number} yMomentum
 	 */
-	constructor(x, y, radius, xMomentum = 0, yMomentum = 0) {
+	constructor(x, y, points, xMomentum = 0, yMomentum = 0) {
 		this.x.pos = x;
 		this.y.pos = y;
 
-		this.radius = radius;
+		this.points = points;
 
 		this.x.momentum = xMomentum;
 		this.y.momentum = yMomentum;
 	}
 
-	static MOMENTUM			= 40;
-	static MIN_BLOB_SIZE	= 50 ;
+	static SPLIT_MOMENTUM	= 35;
+	static MIN_BLOB_POINTS	= 25;
 }
 
 class Player {
@@ -90,19 +115,20 @@ class Player {
 	/** @returns {undefined} */
 	split() {
 		this.blobs.forEach(blob => {
-			if (blob.radius / 2 < Blob.MIN_BLOB_SIZE) return;
+			if (blob.points / 2 < Blob.MIN_BLOB_POINTS) return;
 
-			blob.radius /= 2;
+			blob.points /= 2;
 
 			this.blobs.push(new Blob(
 				blob.x.pos,
 				blob.y.pos,
-				blob.radius,
+
+				blob.points,
 
 				// adjust momentum to have same ratio as speed for correct angle
 
-				blob.x.direction * Math.round(blob.x.speed > blob.y.speed ? Blob.MOMENTUM : blob.x.speed / blob.y.speed * Blob.MOMENTUM),
-				blob.y.direction * Math.round(blob.y.speed > blob.x.speed ? Blob.MOMENTUM : blob.y.speed / blob.x.speed * Blob.MOMENTUM),
+				blob.x.direction * Math.round(blob.x.speed > blob.y.speed ? Blob.SPLIT_MOMENTUM : blob.x.speed / blob.y.speed * Blob.SPLIT_MOMENTUM),
+				blob.y.direction * Math.round(blob.y.speed > blob.x.speed ? Blob.SPLIT_MOMENTUM : blob.y.speed / blob.x.speed * Blob.SPLIT_MOMENTUM),
 			));
 		});
 	}
@@ -123,7 +149,7 @@ class Player {
 			// speeds are adjusted so that blob x/y coords meet mouse at same time
 			// adjust speed only if the blob is not already centered
 
-			if (distanceX > speed + 1 && distanceY > speed + 1) {
+			if (distanceX > speed || distanceY > speed) {
 				blob.x.speed = distanceX > distanceY ? speed : speed * distanceX / distanceY;
 				blob.y.speed = distanceY > distanceX ? speed : speed * distanceY / distanceX;
 			} else {
@@ -135,6 +161,16 @@ class Player {
 
 			blob.x.direction = mouseX > blob.x.pos ? 1 : -1;
 			blob.y.direction = mouseY > blob.y.pos ? 1 : -1;
+
+			// determine speed and collisions
+
+			for (const sibling of this.blobs) {
+				if (blob.x.pos > sibling.x.pos && blob.x.pos < sibling.x.pos + 2 * sibling.radius)
+					blob.x.speed = -blob.x.speed / 2;
+
+				if (blob.y.pos > sibling.y.pos && blob.y.pos < sibling.y.pos + 2 * sibling.radius)
+					blob.y.speed = -blob.y.speed / 2;
+			}
 
 			// move blob by speed and add momentum
 
@@ -156,10 +192,10 @@ class Player {
 
 			// write size
 
-			const size = String(blob.radius);
+			const size = String(blob.points);
 			const metrics = ctx.measureText(size);
 
-			ctx.font		= "64px Ubuntu";
+			ctx.font		= "32px Ubuntu";
 			ctx.fillStyle	= "white";
 			ctx.strokeStyle = "black";
 
@@ -170,14 +206,14 @@ class Player {
 			ctx.strokeText(size, textX, textY);
 		});
 	}
-
+   
 	/**
 	 * @param {number} x
 	 * @param {number} y
-	 * @param {number} radius
+	 * @param {number} points
 	 */
-	constructor(x, y, radius, colour) {
-		this.blobs.push(new Blob(x, y, radius));
+	constructor(x, y, points, colour) {
+		this.blobs.push(new Blob(x, y, points));
 		this.colour = colour;
 
 		addEventListener("keyup", e => {
