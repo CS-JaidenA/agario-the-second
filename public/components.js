@@ -31,12 +31,14 @@ class Blob {
 	 * @property {number} speed
 	 * @property {number} momentum
 	 * @property {number} direction
+	 * @property {boolean} freeze
 	 */
 	x = {
 		pos: 0,
 		speed: 0,
 		momentum: 0,
 		direction: 0,
+		freeze: false,
 	};
 
 	/**
@@ -45,12 +47,14 @@ class Blob {
 	 * @property {number} speed
 	 * @property {number} momentum
 	 * @property {number} direction
+	 * @property {boolean} freeze
 	 */
 	y = {
 		pos: 0,
 		speed: 0,
 		momentum: 0,
 		direction: 0,
+		freeze: false,
 	};
 
 	/** @type {number} */
@@ -165,19 +169,60 @@ class Player {
 			// determine speed and collisions
 
 			for (const sibling of this.blobs) {
-				if (blob.x.pos > sibling.x.pos && blob.x.pos < sibling.x.pos + 2 * sibling.radius)
-					blob.x.speed = -blob.x.speed / 2;
+				if (blob === sibling) continue;
 
-				if (blob.y.pos > sibling.y.pos && blob.y.pos < sibling.y.pos + 2 * sibling.radius)
-					blob.y.speed = -blob.y.speed / 2;
+				const blobTopmostPos	= blob.y.pos - blob.radius;
+				const blobLeftmostPos	= blob.x.pos - blob.radius;
+				const blobRightmostPos	= blob.x.pos + blob.radius;
+				const blobBottommostPos	= blob.y.pos + blob.radius;
+
+				const siblingTopmostPos		= sibling.y.pos - sibling.radius;
+				const siblingLeftmostPos	= sibling.x.pos - sibling.radius;
+				const siblingRightmostPos	= sibling.x.pos + sibling.radius;
+				const siblingBottommostPos	= sibling.y.pos + sibling.radius;
+
+				blob.x.freeze = (
+					// x collision
+
+					blobLeftmostPos < siblingRightmostPos &&
+					blobRightmostPos > siblingLeftmostPos && (
+
+					// check if y is in collision range
+
+					blobTopmostPos < siblingBottommostPos ||
+					blobBottommostPos > siblingTopmostPos ) &&
+
+					// make sure they're not moving in the same direction
+
+					((blob.x.direction !== sibling.x.direction) || (sibling.x.speed === 0))
+				);
+
+				blob.y.freeze = (
+					// y collision
+
+					blobTopmostPos < siblingBottommostPos &&
+					blobBottommostPos > siblingTopmostPos && (
+
+					// check if x is in collision range
+
+					blobLeftmostPos < siblingRightmostPos ||
+					blobRightmostPos > siblingLeftmostPos ) &&
+
+					// make sure they're not moving in the same direction
+
+					((blob.y.direction !== sibling.y.direction) || (sibling.y.speed === 0))
+				);
 			}
 
 			// move blob by speed and add momentum
 
-			blob.x.pos += blob.x.speed * blob.x.direction + blob.x.momentum;
-			blob.y.pos += blob.y.speed * blob.y.direction + blob.y.momentum;
+			blob.x.pos += (blob.x.freeze ? 0 : blob.x.speed) * blob.x.direction + blob.x.momentum;
+			blob.y.pos += (blob.y.freeze ? 0 : blob.y.speed) * blob.y.direction + blob.y.momentum;
 
 			draw.circle(blob.x.pos, blob.y.pos, blob.radius, this.colour);
+			
+			ctx.strokeStyle = "red";
+			ctx.strokeRect(blob.x.pos - blob.radius, blob.y.pos - blob.radius, blob.radius * 2, blob.radius * 2);
 
 			// decrease momentum
 			// set to 0 if applicable in case momentum was a decimal
