@@ -102,7 +102,7 @@ class Blob {
 	static MIN_BLOB_POINTS	= 25;
 }
 
-class Player {
+class MainPlayer {
 	/** @type {Blob[]} */
 	blobs = [];
 
@@ -164,52 +164,6 @@ class Player {
 
 			// determine speed and collisions
 
-			// for (const sibling of this.blobs) {
-			// 	if (blob === sibling) continue;
-
-			// 	const blobTopmostPos	= blob.y.pos - blob.radius;
-			// 	const blobLeftmostPos	= blob.x.pos - blob.radius;
-			// 	const blobRightmostPos	= blob.x.pos + blob.radius;
-			// 	const blobBottommostPos	= blob.y.pos + blob.radius;
-
-			// 	const siblingTopmostPos		= sibling.y.pos - sibling.radius;
-			// 	const siblingLeftmostPos	= sibling.x.pos - sibling.radius;
-			// 	const siblingRightmostPos	= sibling.x.pos + sibling.radius;
-			// 	const siblingBottommostPos	= sibling.y.pos + sibling.radius;
-
-			// 	blob.x.freeze = (
-			// 		// x collision
-
-			// 		blobLeftmostPos < siblingRightmostPos &&
-			// 		blobRightmostPos > siblingLeftmostPos && (
-
-			// 		// check if y is in collision range
-
-			// 		blobTopmostPos < siblingBottommostPos ||
-			// 		blobBottommostPos > siblingTopmostPos ) &&
-
-			// 		// make sure they're not moving in the same direction
-
-			// 		((blob.x.direction !== sibling.x.direction) || (sibling.x.speed === 0))
-			// 	);
-
-			// 	blob.y.freeze = (
-			// 		// y collision
-
-			// 		blobTopmostPos < siblingBottommostPos &&
-			// 		blobBottommostPos > siblingTopmostPos && (
-
-			// 		// check if x is in collision range
-
-			// 		blobLeftmostPos < siblingRightmostPos ||
-			// 		blobRightmostPos > siblingLeftmostPos ) &&
-
-			// 		// make sure they're not moving in the same direction
-
-			// 		((blob.y.direction !== sibling.y.direction) || (sibling.y.speed === 0))
-			// 	);
-			// }
-
 			for (const sibling of this.blobs) {
 				if (blob === sibling) continue;
 				if (blob.x.momentum !== 0 || blob.y.momentum !== 0) continue;
@@ -231,55 +185,83 @@ class Player {
 					// verify if y is in collision range
 
 					if (// check if blob is above sibling
-						blobTopmostPos < siblingTopmostPos &&
-						blobBottommostPos < siblingTopmostPos
+						blobTopmostPos <= siblingTopmostPos &&
+						blobBottommostPos <= siblingTopmostPos
 					) return;
 
 					if ( // check if blob is below sibling
-						blobTopmostPos > siblingBottommostPos &&
-						blobBottommostPos > siblingBottommostPos
+						blobTopmostPos >= siblingBottommostPos &&
+						blobBottommostPos >= siblingBottommostPos
 					) return;
 
 					// apply repulsive force if inside
 
 					if (
-						blobRightmostPos > siblingLeftmostPos &&
-						blobRightmostPos < siblingRightmostPos
-					) return blob.x.direction = -1;
-					else if (
 						blobLeftmostPos < siblingRightmostPos &&
 						blobLeftmostPos > siblingLeftmostPos
 					) return blob.x.direction = 1;
 
+					if (
+						blobRightmostPos > siblingLeftmostPos &&
+						blobRightmostPos < siblingRightmostPos
+					) return blob.x.direction = -1;
+					
 					// adjust speed in case of collision
 
-					if (blob.x.direction === 1)
-						 if (
+					if (blob.x.direction === 1) {
+						if (
 							blobRightmostPos + blob.x.speed > siblingLeftmostPos &&
 							blobRightmostPos + blob.x.speed < siblingRightmostPos
 						) blob.x.speed = siblingLeftmostPos - blobRightmostPos;
-					// else if (
-					// 		blobLeftmostPos - blob.x.speed < siblingRightmostPos &&
-					// 		blobLeftmostPos - blob.x.speed > siblingLeftmostPos
-					// 	) blob.x.speed = blobLeftmostPos - siblingRightmostPos;
+					} else {
+						if (
+							blobLeftmostPos - blob.x.speed < siblingRightmostPos &&
+							blobLeftmostPos - blob.x.speed > siblingLeftmostPos
+						) blob.x.speed = blobLeftmostPos - siblingRightmostPos;
+					}
 				})();
 
 				// y collisions
 
-				// (function() {
-				// 	// verify if x is in collision range
+				(function() {
+					// verify if x is in collision range
 
-				// 	if (blobLeftmostPos > siblingRightmostPos) return;
-				// 	if (blobRightmostPos < siblingLeftmostPos) return;
+					if ( //check if blob is left of sibling
+						blobLeftmostPos <= siblingLeftmostPos &&
+						blobRightmostPos <= siblingLeftmostPos
+					) return;
 
-				// 	// adjust speed in case of collision
+					if ( // check if blob is right of sibling
+						blobLeftmostPos >= siblingRightmostPos &&
+						blobRightmostPos >= siblingRightmostPos
+					) return;
 
-				// 	if (blob.y.direction === 1)
-				// 		 if (blobBottommostPos + blob.y.speed > siblingTopmostPos)
-				// 		 	blob.y.speed = siblingTopmostPos - blobBottommostPos;
-				// 	else if (blobTopmostPos - blob.y.speed < siblingBottommostPos)
-				// 			blob.y.speed = blobTopmostPos - siblingBottommostPos;
-				// })();
+					// apply repulsive force if inside
+
+					if (
+						blobTopmostPos > siblingTopmostPos &&
+						blobTopmostPos < siblingBottommostPos
+					) return blob.y.direction = 1;
+
+					if (
+						blobBottommostPos > siblingTopmostPos &&
+						blobBottommostPos < siblingBottommostPos
+					) return blob.y.direction = -1;
+
+					// adjust speed in case of collision
+
+					if (blob.y.direction === 1) {
+						if (
+							blobBottommostPos + blob.y.speed > siblingTopmostPos &&
+							blobBottommostPos + blob.y.speed < siblingBottommostPos
+						) blob.y.speed = siblingTopmostPos - blobBottommostPos;
+					} else {
+						if (
+							blobTopmostPos - blob.y.speed < siblingBottommostPos &&
+							blobTopmostPos - blob.y.speed > siblingTopmostPos
+						) blob.y.speed = blobTopmostPos - siblingBottommostPos;
+					}
+				})();
 			}
 
 			// move blob by speed and add momentum
@@ -288,6 +270,8 @@ class Player {
 			blob.y.pos += blob.y.speed * blob.y.direction + blob.y.momentum;
 
 			draw.circle(blob.x.pos, blob.y.pos, blob.radius, this.colour);
+			
+			// draw square borders
 			
 			ctx.strokeStyle = "red";
 			ctx.strokeRect(blob.x.pos - blob.radius, blob.y.pos - blob.radius, blob.radius * 2, blob.radius * 2);
@@ -324,6 +308,7 @@ class Player {
 	 * @param {number} x
 	 * @param {number} y
 	 * @param {number} points
+	 * @param {string} number
 	 */
 	constructor(x, y, points, colour) {
 		this.blobs.push(new Blob(x, y, points));
@@ -341,4 +326,4 @@ class Player {
 	}
 }
 
-export default { init, Player };
+export default { init, MainPlayer };
