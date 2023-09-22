@@ -1,10 +1,3 @@
-import draw from "./manager@draw.js";
-import colours from "./manager@colours.js";
-
-function init(canvas, context) {
-	draw.init(context);
-}
-
 class Food {
 	/** @type {number} */
 	x;
@@ -33,5 +26,3 @@ class Food {
 
 	static MIN_FOOD_COUNT = 100;
 }
-
-export default { init, Food };

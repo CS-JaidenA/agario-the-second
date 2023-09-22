@@ -14,5 +14,3 @@ addEventListener("mousemove", function({clientX, clientY}) {
     mouse.x = clientX / document.documentElement.clientWidth;
     mouse.y = clientY / document.documentElement.clientHeight;
 });
-
-export default mouse;

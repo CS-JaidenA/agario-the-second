@@ -1,106 +1,5 @@
-import draw from "./manager@draw.js";
-import mouse from "./manager@mouse.js";
-
 /** @type {number} */
-const speed = 5;
-
-/** @type {HTMLCanvasElement} */
-let cnv;
-
-/** @type {CanvasRenderingContext2D} */
-let ctx;
-
-/**
- * @param {HTMLCanvasElement} canvas
- * @param {CanvasRenderingContext2D} context
- * @returns {undefined}
- */
-function init(canvas, context) {
-	cnv = canvas;
-	ctx = context;
-
-	// initialize dependencies with updated information
-
-	draw.init(ctx);
-}
-
-class Blob {
-	/**
-	 * @namespace
-	 * @property {number} pos
-	 * @property {number} speed
-	 * @property {number} momentum
-	 * @property {number} direction
-	 */
-	x = {
-		pos: 0,
-		speed: 0,
-		momentum: 0,
-		direction: 0,
-	};
-
-	/**
-	 * @namespace
-	 * @property {number} pos
-	 * @property {number} speed
-	 * @property {number} momentum
-	 * @property {number} direction
-	 */
-	y = {
-		pos: 0,
-		speed: 0,
-		momentum: 0,
-		direction: 0,
-	};
-
-	/** @type {number} */
-	#area;
-
-	/** @type {number} */
-	#points;
-
-	/** @type {number} */
-	#radius;
-
-	get area() {
-		return this.#area;
-	}
-
-	get points() {
-		return this.#points;
-	}
-
-	get radius() {
-		return this.#radius;
-	}
-
-	set points(points) {
-		this.#points	= points;
-
-		this.#area		= points * Math.PI * 50;
-		this.#radius	= Math.sqrt(this.#area / Math.PI);
-	}
-
-	/**
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {number} points
-	 * @param {number} xMomentum
-	 * @param {number} yMomentum
-	 */
-	constructor(x, y, points, xMomentum = 0, yMomentum = 0) {
-		this.x.pos = x;
-		this.y.pos = y;
-
-		this.points = points;
-
-		this.x.momentum = xMomentum;
-		this.y.momentum = yMomentum;
-	}
-
-	static SPLIT_MOMENTUM	= 35;
-	static MIN_BLOB_POINTS	= 25;
-}
+const speed = 4;
 
 class MainPlayer {
 	/** @type {Blob[]} */
@@ -273,8 +172,8 @@ class MainPlayer {
 			
 			// draw square borders
 			
-			ctx.strokeStyle = "red";
-			ctx.strokeRect(blob.x.pos - blob.radius, blob.y.pos - blob.radius, blob.radius * 2, blob.radius * 2);
+			// ctx.strokeStyle = "red";
+			// ctx.strokeRect(blob.x.pos - blob.radius, blob.y.pos - blob.radius, blob.radius * 2, blob.radius * 2);
 
 			// decrease momentum
 			// set to 0 if applicable in case momentum was a decimal
@@ -325,5 +224,3 @@ class MainPlayer {
 		});
 	}
 }
-
-export default { init, MainPlayer };

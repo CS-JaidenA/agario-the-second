@@ -1,15 +1,27 @@
 const express   = require("express");
 const app       = express();
 
-// const server	= require("http").createServer(app);
-// const WebSocket	= require("ws");
+const server	= require("http").createServer(app);
+const WebSocket	= require("ws");
 
-// const wss		= new WebSocket.Server({ server: server });
+const wss		= new WebSocket.Server({ server: server });
+const clients   = new Set();
 
-// wss.on("connection", ws => {
-// 	clients.add(ws);
-// 	ws.on("message", message => clients.forEach(client => client === ws ? messages.save(JSON.parse(message.toString())) : client.send(message.toString())));
-// });
+wss.on("connection", ws => {
+    console.log("[!] Client connection.");
+    clients.add(ws);
+
+    ws.on("message", message => {
+        console.log(`[!] Message received: ${message}`);
+    });
+
+	ws.on("close", () => {
+        console.log("[!] Client disconnection.");
+        clients.delete(ws);
+    });
+
+    ws.send("hi");
+});
 
 app.use(express.static("public"));
-app.listen(3000, () => console.log("\n[!] Listening on port 3000.\n"));
+server.listen(3000, () => console.log("\n[!] Listening on port 3000.\n"));

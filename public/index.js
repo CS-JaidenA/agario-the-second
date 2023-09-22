@@ -1,3 +1,10 @@
+const ws = new WebSocket("ws://localhost:3000");
+
+ws.addEventListener("message", e => {
+	console.log(`[!] Message received: ${e.data}`);
+	ws.send("hi back");
+});
+
 /** @type {HTMLCanvasElement} */
 const cnv = document.getElementById("canvas");
 
@@ -15,14 +22,14 @@ window.dispatchEvent(new Event("resize"));
 
 // setup
 
-game.init(cnv, ctx);
+const world = new World();
 requestAnimationFrame(update);
 
 // draw canvas
 
 function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
-	game.world.draw();
+	world.draw();
 
 	requestAnimationFrame(update);
 }

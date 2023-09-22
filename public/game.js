@@ -1,10 +1,3 @@
-import food from "./food.js";
-import colours from "./manager@colours.js";
-import components from "./components.js";
-
-food.init(cnv, ctx);
-components.init(cnv, ctx);
-
 class World {
 	/** @type {Food[]} */
 	food = [];
@@ -13,11 +6,11 @@ class World {
 	players = [];
 
 	draw() {
-		for (let i = 0; i < food.Food.MIN_FOOD_COUNT - this.food.length; i++)
-			this.food.push(new food.Food(
+		for (let i = 0; i < Food.MIN_FOOD_COUNT - this.food.length; i++)
+			this.food.push(new Food(
 				Math.random() * cnv.width,
 				Math.random() * cnv.height,
-				colours.random()
+				colour.random()
 			));
 
 		this.food.forEach(food => food.draw());
@@ -25,11 +18,11 @@ class World {
 	}
 
 	constructor() {
-		this.players.push(new components.MainPlayer(
+		this.players.push(new MainPlayer(
 			cnv.width / 2,
 			cnv.height / 2,
 			100,
-			colours.random()
+			colour.random()
 		));
 	}
 }
