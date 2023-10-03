@@ -1,9 +1,20 @@
-class Player {
-    /** @type {number} */
-    mass;
+const Blob = require("./component.blob.js");
 
-    /** @type {string} */
-    colour;
+class Player {
+	/** @type {Blob[]} */
+	blobs;
+
+	/** @type {string} */
+	colour;
+
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} mass
+	 */
+	constructor(x, y, mass) {
+		this.blobs.push(new Blob(x, y, mass));
+	}
 }
 
 module.exports = Player;
