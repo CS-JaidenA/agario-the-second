@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * @typedef {object} message
- * @property {number} code
- * @property {any}    body
+ * @typedef {object} Message
+ * @property {undefined|string}       uuid
+ * @property {undefined|WorldPackage} world
  */
 
 // express
@@ -34,44 +34,25 @@ const connections = {};
 const world = new World();
 
 wss.on("connection", ws => {
+	// save ws
+
+	const uuid = crypto.randomUUID();
+	connections[uuid] = ws;
+
 	// send world
 
-	ws.send(JSON.stringify({
-		code: codes.WORLD,
-		body: world,
-	}));
-
-	// send player
-
-	const uuid   = crypto.randomUUID();
-	const player = world.player(uuid);
-
-	ws.send(JSON.stringify({
-		code: codes.PLAYER,
-		body: player,
-	}));
-
-	// save websocket
-
-	connections[uuid] = ws;
+	world.createPlayer(uuid);
+	ws.send(JSON.stringify({ world: world.pack() }));
 
 	// handle messages
 
 	ws.on("message", message => {
 		message = JSON.parse(message);
-
-		switch (message.code) {
-			case codes.MOUSE:
-				break;
-		}
 	});
 
-	// remove client on close
+	// disconnect from client on close
 
-	ws.on("close", () => {
-		world.disconnect(uuid);
-		delete connections[uuid];
-	});
+	ws.on("close", () => world.disconnect(uuid) && delete connections[uuid]);
 });
 
 app.use(express.static("public"));

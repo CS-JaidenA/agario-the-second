@@ -1,14 +1,23 @@
+// establish connection
+
 const ws = new WebSocket("ws://localhost:3000");
 
+/** @type {string} */
+let uuid;
+
+/** @type {import("../component.world").WorldPackage} */
+let world;
+
 ws.addEventListener("message", e => {
-	console.log(`[!] Message received: ${e.data}`);
-	ws.send("hi back");
+	/** @type {import("..").Message} */
+	const message = JSON.parse(e.data);
+
+	if (message.uuid)  uuid  = uuid;
+	if (message.world) world = world;
 });
 
 /** @type {HTMLCanvasElement} */
 const cnv = document.getElementById("canvas");
-
-/** @type {CanvasRenderingContext2D} */
 const ctx = cnv.getContext("2d");
 
 // scale canvas
@@ -20,16 +29,8 @@ window.addEventListener("resize", () => {
 
 window.dispatchEvent(new Event("resize"));
 
-// setup
-
-const world = new World();
-requestAnimationFrame(update);
-
 // draw canvas
 
 function update() {
-	ctx.clearRect(0, 0, cnv.width, cnv.height);
-	world.draw();
-
 	requestAnimationFrame(update);
 }
