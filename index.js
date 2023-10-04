@@ -2,6 +2,7 @@
 
 /**
  * @typedef  {object} Message
+ * @property {number}                 code
  * @property {undefined|string}       uuid
  * @property {undefined|WorldPackage} world
  */
@@ -40,7 +41,11 @@ wss.on("connection", ws => {
 	// send world
 
 	world.createPlayer(uuid);
-	ws.send(JSON.stringify({ world: world.pack() }));
+	ws.send(JSON.stringify({
+		code:  codes.init,
+		uuid:  uuid,
+		world: world.pack(),
+	}));
 
 	// handle messages
 

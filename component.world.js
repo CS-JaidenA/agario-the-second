@@ -1,65 +1,66 @@
-const Player	= require("./component.player.js");
-const defaults	= require("./defaults.js");
+const Player = require("./component.player.js");
+
+const DEFAULT_SPAWN_MASS   = 100;
+const DEFAULT_PELLET_COUNT = 100;
 
 /**
- * @typedef WorldPackage
- * @property {undefined|number} width   Only if applicable.
- * @property {undefined|number} height  Only if applicable.
-
+ * @typedef  {object} WorldPackageObject
+ * 
  * @property {Pellet[]}         pellets
  * @property {{string: Player}} players
  */
 
-class World {
-	/** @type {number} */
-	width;
+/**
+ * @typedef  {object} WorldPackageExtendedObject
+ *
+ * @property {number}           width
+ * @property {number}           height
+ * @property {Pellet[]}         pellets
+ * @property {{string: Player}} players
+ */
 
-	/** @type {number} */
-	height;
-
+class WorldPackage {
 	/** @type {Pellet[]} */
 	pellets = [];
 
 	/** @type {{string: Player}} */
 	players = {};
 
-	/** @type {number} */
-	pelletCount;
-
-	/** @returns {WorldPackage} */
+	/** @returns {WorldPackageObject} */
 	pack = () => ({
 		pellets: this.pellets,
-		players: this.players,
+		players: this.players, 
 	});
+}
 
-	/** @returns {WorldPackage} */
-	packall = () => ({
-		width:   this.width,
-		height:  this.height,
-		pellets: this.pellets,
-		players: this.players,
+class WorldPackageExtended extends WorldPackage {
+	/** @type {number} */
+	width;
+
+	/** @type {number} */
+	height;
+
+	/** @returns {WorldPackageExtendedObject} */
+	extdpack = () => ({
+		width:  this.width,
+		height: this.height,
+		...this.pack(),
 	});
+}
 
-	/** @returns {undefined} */
-	disconnect = () => { delete this.players[uuid] };
+class World extends WorldPackageExtended {
+	/** @type {number} */
+	pelletCount = DEFAULT_PELLET_COUNT;
 
-	/**
-	 * @param {string} uuid 
-	 * @returns {undefined}
-	 */
-	createPlayer = uuid => { this.players[uuid] = new Player(
+	connect = uuid => { this.players[uuid] = new Player(
 		Math.random() * this.width,
 		Math.random() * this.height,
-		100,
+		DEFAULT_SPAWN_MASS,
 	)};
 
-	constructor() {
-		// set defaults
+	disconnect = uuid => { delete this.players[uuid] };
 
-		this.width       = 100;
-		this.height      = 100;
-		this.pelletCount = 100;
-	}
+	constructor() { super() }
 }
 
 module.exports = World;

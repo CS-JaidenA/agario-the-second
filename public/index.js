@@ -12,7 +12,12 @@ ws.addEventListener("message", e => {
 	/** @type {import("..").Message} */
 	const message = JSON.parse(e.data);
 
-	if (message.uuid)  uuid  = uuid;
+	switch (message.code) {
+		case 0:
+			
+	}
+
+	if (message.uuid) uuid = uuid;
 	if (message.world) world = world;
 });
 
