@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @typedef {object} Message
+ * @typedef  {object} Message
  * @property {undefined|string}       uuid
  * @property {undefined|WorldPackage} world
  */
@@ -20,13 +20,11 @@ const wss        = new WebSocket.Server({ server });
 
 // miscellaneous setup
 
-const crypto     = require("crypto");
-
 const codes      = require("./codes.js");
 const World	     = require("./component.world.js");
-const Connection = require("./connection.js");
+const crypto     = require("crypto");
 
-/** @type {{string: Connection}} */
+/** @type {{string: WebSocket}} */
 const connections = {};
 
 // game setup
@@ -52,7 +50,10 @@ wss.on("connection", ws => {
 
 	// disconnect from client on close
 
-	ws.on("close", () => world.disconnect(uuid) && delete connections[uuid]);
+	ws.on("close", () => {
+		delete connections[uuid];
+		world.disconnect(uuid);
+	});
 });
 
 app.use(express.static("public"));
