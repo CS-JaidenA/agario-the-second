@@ -2,23 +2,23 @@
 
 const ws = new WebSocket("ws://localhost:3000");
 
-/** @type {string} */
-let uuid;
-
-/** @type {import("../component.world").WorldPackage} */
-let world;
+/** @type {import("../component.world").WorldPackageExtendedObject} */
+let pack = {};
+let uuid = '';
 
 ws.addEventListener("message", e => {
-	/** @type {import("..").Message} */
 	const message = JSON.parse(e.data);
 
-	switch (message.code) {
-		case 0:
-			
-	}
+	console.log(100, message.pack, message.uuid);
+	console.log(200, pack);
 
-	if (message.uuid) uuid = uuid;
-	if (message.world) world = world;
+	if (message.pack)
+		pack = { ...pack, ...message.pack };
+
+	if (message.uuid)
+		uuid = uuid;
+
+	console.log(300, pack);
 });
 
 /** @type {HTMLCanvasElement} */
@@ -36,6 +36,24 @@ window.dispatchEvent(new Event("resize"));
 
 // draw canvas
 
-function update() {
-	requestAnimationFrame(update);
+function draw() {
+	ctx.clearRect(0, 0, cnv.width, cnv.height);
+
+	// draw grid
+
+	ctx.lineWidth = 2;
+	ctx.strokeStyle = "red";
+
+	for (let i = pack.width - 1; i > 0; i++) {
+		const offset = cnv.width / pack.width * i;
+
+		ctx.beginPath();
+		ctx.moveTo(offset, 0);
+		ctx.lineTo(offset, cnv.height);
+		ctx.stroke();
+	}
+
+	requestAnimationFrame(draw);
 }
+
+requestAnimationFrame(draw);

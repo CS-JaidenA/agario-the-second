@@ -2,7 +2,7 @@ const Blob = require("./component.blob.js");
 
 class Player {
 	/** @type {Blob[]} */
-	blobs;
+	blobs = [];
 
 	/** @type {string} */
 	colour;

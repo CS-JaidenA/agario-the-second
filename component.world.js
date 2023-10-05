@@ -35,22 +35,26 @@ class WorldPackage {
 
 class WorldPackageExtended extends WorldPackage {
 	/** @type {number} */
-	width;
+	width = 100;
 
 	/** @type {number} */
-	height;
+	height = 100;
 
 	/** @returns {WorldPackageExtendedObject} */
 	extdpack = () => ({
+		...this.pack(),
 		width:  this.width,
 		height: this.height,
-		...this.pack(),
 	});
 }
 
 class World extends WorldPackageExtended {
 	/** @type {number} */
 	pelletCount = DEFAULT_PELLET_COUNT;
+
+	tick = () => {
+		this.pellets.push(1);
+	}
 
 	connect = uuid => { this.players[uuid] = new Player(
 		Math.random() * this.width,
