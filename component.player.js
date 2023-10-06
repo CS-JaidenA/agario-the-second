@@ -14,6 +14,7 @@ class Player {
 	 */
 	constructor(x, y, mass) {
 		this.blobs.push(new Blob(x, y, mass));
+		this.colour = "red";
 	}
 }
 

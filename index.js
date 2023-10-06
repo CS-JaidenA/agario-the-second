@@ -31,8 +31,6 @@ wss.on("connection", ws => {
 
 	world.connect(uuid);
 
-	console.log(world.extdpack());
-
 	ws.send(JSON.stringify({
 		uuid,
 		pack: world.extdpack(),
@@ -61,7 +59,7 @@ setInterval(() => {
 
 	const pack = JSON.stringify({ pack: world.pack() });
 	wss.clients.forEach(client => client.send(pack));
-}, 6000);
+}, 10000);
 
 app.use(express.static("public"));
 server.listen(3000, () => console.log("\n[!] Listening on port 3000.\n"));

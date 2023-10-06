@@ -35,10 +35,10 @@ class WorldPackage {
 
 class WorldPackageExtended extends WorldPackage {
 	/** @type {number} */
-	width = 100;
+	width  = 10;
 
 	/** @type {number} */
-	height = 100;
+	height = 10;
 
 	/** @returns {WorldPackageExtendedObject} */
 	extdpack = () => ({
@@ -57,8 +57,8 @@ class World extends WorldPackageExtended {
 	}
 
 	connect = uuid => { this.players[uuid] = new Player(
-		Math.random() * this.width,
-		Math.random() * this.height,
+		10, // Math.random() * this.width,
+		10, // Math.random() * this.height,
 		DEFAULT_SPAWN_MASS,
 	)};
 
