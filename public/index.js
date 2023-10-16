@@ -9,19 +9,13 @@ let uuid = '';
 ws.addEventListener("message", e => {
 	const message = JSON.parse(e.data);
 
-	// console.log(100, message.pack, message.uuid);
-	// console.log(200, pack);
-
 	if (message.uuid)
 		uuid = message.uuid;
 
 	if (message.pack) {
-		console.log(100, message.pack);
 		pack = { ...pack, ...message.pack };
 		requestAnimationFrame(update);
 	}
-
-	console.log(300, uuid);
 });
 
 /** @type {HTMLCanvasElement} */
@@ -73,17 +67,33 @@ const draw = {
 
 // draw canvas
 
-const gridColour     = "#313131";
-const gridBoxSize   = 40;
 const gridThickness = 1;
+const gridBoxSize   = 40;
+const gridColour    = "#313131";
 
 function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
 
 	const mainPlayerBlob = pack.players[uuid].blobs[0];
 
-	const gridWidth  = gridBoxSize * pack.width;
-	const gridHeight = gridHeight * pack.height;
+	console.log(mainPlayerBlob);
+
+	const xOffset = cnv.width  / 2 - mainPlayerBlob.x / 100 * pack.width * gridBoxSize;
+	const yOffset = cnv.height / 2 - mainPlayerBlob.y / 100 * pack.height * gridBoxSize;
+
+	const xBorder = pack.width  * gridBoxSize;
+	const yBorder = pack.height * gridBoxSize;
+
+	// draw border - left top right bottom
+
+	draw.line([xOffset, yOffset], [xOffset, yBorder + yOffset], gridColour, gridThickness);
+	draw.line([xOffset, yOffset], [xBorder + xOffset, yOffset], gridColour, gridThickness);
+	draw.line([xBorder + xOffset, yOffset], [xBorder + xOffset, yBorder + yOffset], gridColour, gridThickness);
+	draw.line([xOffset, yBorder + yOffset], [xBorder + xOffset, yBorder + yOffset], gridColour, gridThickness);
+
+	// draw player
+
+	draw.circ(cnv.width / 2, cnv.height / 2, mainPlayerBlob.mass, "red");
 }
 
 // function update() {

@@ -57,8 +57,8 @@ class World extends WorldPackageExtended {
 	}
 
 	connect = uuid => { this.players[uuid] = new Player(
-		10, // Math.random() * this.width,
-		10, // Math.random() * this.height,
+		Math.random() * 10 * this.width,
+		Math.random() * 10 * this.height,
 		DEFAULT_SPAWN_MASS,
 	)};
 
