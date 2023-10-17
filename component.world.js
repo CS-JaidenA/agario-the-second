@@ -1,5 +1,6 @@
 const Player = require("./component.player.js");
 
+const DEFAULT_WORLD_SIZE   = 15; // 282
 const DEFAULT_SPAWN_MASS   = 100;
 const DEFAULT_PELLET_COUNT = 100;
 
@@ -35,10 +36,10 @@ class WorldPackage {
 
 class WorldPackageExtended extends WorldPackage {
 	/** @type {number} */
-	width  = 10;
+	width  = DEFAULT_WORLD_SIZE;
 
 	/** @type {number} */
-	height = 10;
+	height = DEFAULT_WORLD_SIZE;
 
 	/** @returns {WorldPackageExtendedObject} */
 	extdpack = () => ({
@@ -57,8 +58,8 @@ class World extends WorldPackageExtended {
 	}
 
 	connect = uuid => { this.players[uuid] = new Player(
-		Math.random() * 10 * this.width,
-		Math.random() * 10 * this.height,
+		Math.random() * this.width,
+		Math.random() * this.height,
 		DEFAULT_SPAWN_MASS,
 	)};
 
