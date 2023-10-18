@@ -1,41 +1,19 @@
-// establish connection
-
-const ws   = new WebSocket("ws://localhost:3000");
-
-const game = {
-	/** @type {import("../component.world").WorldPackageExtendedObject} */
-	pack: {},
-	uuid: '',
-	uninitialized: true,
-};
-
-ws.addEventListener("message", e => {
-	const message = JSON.parse(e.data);
-
-	if (message.uuid)
-		game.uuid = message.uuid;
-
-	if (message.pack)
-		game.pack = { ...game.pack, ...message.pack };
-
-	if (game.uninitialized) {
-		game.uninitialized = false;
-		requestAnimationFrame(update);
-	}
-});
+const ws = new WebSocket("ws://localhost:3000");
 
 /** @type {HTMLCanvasElement} */
 const cnv = document.getElementById("canvas");
 const ctx = cnv.getContext("2d");
 
-// scale canvas
+const game  = {
+	pack: {},
+	uuid: '',
+	uninitialized: true,
+};
 
-window.addEventListener("resize", () => {
-	cnv.width  = Math.floor(window.innerWidth  * window.devicePixelRatio);
-	cnv.height = Math.floor(window.innerHeight * window.devicePixelRatio);
-});
-
-window.dispatchEvent(new Event("resize"));
+const mouse = {
+	xPercentage: 50,
+	yPercentage: 50,
+};
 
 // draw canvas
 
@@ -44,13 +22,44 @@ function update() {
 
 	const mainPlayerBlob = game.pack.players[game.uuid].blobs[0];
 
+	// draw
+
 	draw.grid(mainPlayerBlob);
-
-	// draw player
-
 	draw.circ(cnv.width / 2, cnv.height / 2, mainPlayerBlob.mass, "red");
 
-	// loop
+	// send mouse and loop
 
 	requestAnimationFrame(update);
 }
+
+ws.addEventListener("message", e => {
+	const message = JSON.parse(e.data);
+
+	if (message.uuid)
+		game.uuid = message.uuid;
+
+	if (message.pack) {
+		game.pack = { ...game.pack, ...message.pack };
+		ws.send(JSON.stringify(mouse));
+	}
+
+	if (game.uninitialized) {
+		game.uninitialized = false;
+		requestAnimationFrame(update);
+	}
+});
+
+window.addEventListener("mousemove", function({ clientX, clientY }) {
+	mouse.xPercentage = clientX / this.document.documentElement.clientWidth * 100;
+	mouse.yPercentage = clientY / this.document.documentElement.clientHeight * 100;
+
+	mouse.x = mouse.xPercentage * cnv.width;
+	mouse.y = mouse.yPercentage * cnv.height;
+});
+
+window.addEventListener("resize", () => {
+	cnv.width  = Math.floor(window.innerWidth  * window.devicePixelRatio);
+	cnv.height = Math.floor(window.innerHeight * window.devicePixelRatio);
+});
+
+window.dispatchEvent(new Event("resize"));

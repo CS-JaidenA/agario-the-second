@@ -4,22 +4,6 @@ const DEFAULT_WORLD_SIZE   = 15; // 282
 const DEFAULT_SPAWN_MASS   = 100;
 const DEFAULT_PELLET_COUNT = 100;
 
-/**
- * @typedef  {object} WorldPackageObject
- * 
- * @property {Pellet[]}         pellets
- * @property {{string: Player}} players
- */
-
-/**
- * @typedef  {object} WorldPackageExtendedObject
- *
- * @property {number}           width
- * @property {number}           height
- * @property {Pellet[]}         pellets
- * @property {{string: Player}} players
- */
-
 class WorldPackage {
 	/** @type {Pellet[]} */
 	pellets = [];
@@ -27,10 +11,10 @@ class WorldPackage {
 	/** @type {{string: Player}} */
 	players = {};
 
-	/** @returns {WorldPackageObject} */
+	/** @returns {WorldPackage} */
 	pack = () => ({
 		pellets: this.pellets,
-		players: this.players, 
+		players: this.players,
 	});
 }
 
@@ -41,7 +25,7 @@ class WorldPackageExtended extends WorldPackage {
 	/** @type {number} */
 	height = DEFAULT_WORLD_SIZE;
 
-	/** @returns {WorldPackageExtendedObject} */
+	/** @returns {WorldPackageExtended} */
 	extdpack = () => ({
 		...this.pack(),
 		width:  this.width,
@@ -53,9 +37,7 @@ class World extends WorldPackageExtended {
 	/** @type {number} */
 	pelletCount = DEFAULT_PELLET_COUNT;
 
-	tick = () => {
-		this.pellets.push(1);
-	}
+	tick = () => {};
 
 	connect = uuid => { this.players[uuid] = new Player(
 		Math.random() * this.width,
