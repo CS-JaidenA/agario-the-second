@@ -11,8 +11,8 @@ const game  = {
 };
 
 const mouse = {
-	xPercentage: 50,
-	yPercentage: 50,
+	x: 0,
+	y: 0,
 };
 
 // draw canvas
@@ -27,7 +27,7 @@ function update() {
 	draw.grid(mainPlayerBlob);
 	draw.circ(cnv.width / 2, cnv.height / 2, mainPlayerBlob.mass, "red");
 
-	// send mouse and loop
+	// loop
 
 	requestAnimationFrame(update);
 }
@@ -50,11 +50,10 @@ ws.addEventListener("message", e => {
 });
 
 window.addEventListener("mousemove", function({ clientX, clientY }) {
-	mouse.xPercentage = clientX / this.document.documentElement.clientWidth * 100;
-	mouse.yPercentage = clientY / this.document.documentElement.clientHeight * 100;
+	const largest = Math.max(cnv.width, cnv.height);
 
-	mouse.x = mouse.xPercentage * cnv.width;
-	mouse.y = mouse.yPercentage * cnv.height;
+	mouse.x = (clientX - cnv.width  / 2) / (largest / 2);
+	mouse.y = (clientY - cnv.height / 2) / (largest / 2);
 });
 
 window.addEventListener("resize", () => {

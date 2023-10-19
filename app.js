@@ -39,7 +39,7 @@ wss.on("connection", ws => {
 	// handle messages
 
 	ws.on("message", message => {
-		world.players[uuid].update(JSON.parse(message));
+		world.players[uuid].mouse = JSON.parse(message);
 	});
 
 	// disconnect from client on close
@@ -59,7 +59,7 @@ setInterval(() => {
 
 	const pack = JSON.stringify({ pack: world.pack() });
 	wss.clients.forEach(client => client.send(pack));
-}, 10000);
+}, 1000);
 
 app.use(express.static("public"));
 server.listen(3000, () => console.log("\n[!] Listening on port 3000.\n"));
