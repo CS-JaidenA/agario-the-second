@@ -27,8 +27,8 @@ draw.line = (x1, y1, x2, y2, colour, thickness) => {
 
 draw.grid = mainPlayerBlob => {
 	const gridBox = {
+		size:  47,
 		style: ["#313131", 1],
-		size:  40,
 	};
 
 	const x = {
