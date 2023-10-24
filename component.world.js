@@ -8,7 +8,7 @@ class WorldPackage {
 	/** @type {Pellet[]} */
 	pellets = [];
 
-	/** @type {{string: Player}} */
+	/** @type {Object<string, Player>} */
 	players = {};
 
 	/** @returns {WorldPackage} */
@@ -39,25 +39,17 @@ class World extends WorldPackageExtended {
 
 	tick = () => {
 		for (const uuid in this.players) {
-			/** @type {Player} */
 			const player = this.players[uuid];
+			const blob   = player.blobs[0];
 
-			const stopRadius = 0.025;
+			const slowingRadius = blob.mass / (40 * 10); // 40 = gridbox width
+			const mouseDistance = Math.max(Math.abs(player.mouse.x), Math.abs(player.mouse.y));
 
-			if (player.mouse.x < stopRadius && player.mouse.x > -stopRadius &&
-				player.mouse.y < stopRadius && player.mouse.y > -stopRadius)
-				return;
-
-			const slowDownRadius = 0.1;
-
-			const dist   = Math.max(Math.abs(player.mouse.x), Math.abs(player.mouse.y));
-			const offset = dist > slowDownRadius
+			const offset = mouseDistance > slowingRadius
 				? 1
-				: dist * (1 / slowDownRadius);
+				: Math.max(mouseDistance * (1 / slowingRadius) - 0.1, 0);
 
-			const blob = player.blobs[0];
-
-			const speed = (8 / (blob.mass * 10) + 0.12) * offset;
+			const speed = blob.mass * 0.2 / 100 * offset;
 
 			const distanceX = Math.abs(player.mouse.x);
 			const distanceY = Math.abs(player.mouse.y);
@@ -65,8 +57,13 @@ class World extends WorldPackageExtended {
 			const adjustedSpeedX = (distanceX > distanceY ? speed : speed * distanceX / distanceY) || 0;
 			const adjustedSpeedY = (distanceY > distanceX ? speed : speed * distanceY / distanceX) || 0;
 
-			blob.x += adjustedSpeedX * Math.sign(player.mouse.x);
-			blob.y += adjustedSpeedY * Math.sign(player.mouse.y);
+			const angle = Math.atan2(player.mouse.y, player.mouse.x);
+
+			const vectorX = Math.cos(angle);
+			const vectorY = Math.sin(angle);
+
+			blob.x += adjustedSpeedX * vectorX;
+			blob.y += adjustedSpeedY * vectorY;
 
 			if (blob.x <= 0)
 				blob.x = 0;
@@ -84,6 +81,7 @@ class World extends WorldPackageExtended {
 		Math.random() * this.width,
 		Math.random() * this.height,
 		DEFAULT_SPAWN_MASS,
+		`rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
 	)};
 
 	disconnect = uuid => { delete this.players[uuid] };

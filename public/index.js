@@ -1,4 +1,4 @@
-const ws = new WebSocket("ws://localhost:3000");
+const ws = new WebSocket(`${location.protocol === "http:" ? "ws" : "wss"}://${location.host}`);
 
 /** @type {HTMLCanvasElement} */
 const cnv = document.getElementById("canvas");
@@ -20,12 +20,26 @@ const mouse = {
 function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
 
-	const mainPlayerBlob = game.pack.players[game.uuid].blobs[0];
+	const mainPlayer     = game.pack.players[game.uuid];
+	const mainPlayerBlob = mainPlayer.blobs[0];
 
 	// draw
 
 	draw.grid(mainPlayerBlob);
-	draw.circ(cnv.width / 2, cnv.height / 2, mainPlayerBlob.mass, "red");
+
+	for (const uuid in game.pack.players) {
+		if (uuid === game.uuid) continue;
+
+		const player = game.pack.players[uuid];
+		const blob   = player.blobs[0];
+
+		const x = cnv.width  / 2 + (blob.x - mainPlayerBlob.x) * 40;
+		const y = cnv.height / 2 + (blob.y - mainPlayerBlob.y) * 40;
+
+		draw.circ(x, y, blob.mass, player.colour);
+	}
+
+	draw.circ(cnv.width / 2, cnv.height / 2, mainPlayerBlob.mass, mainPlayer.colour);
 
 	// loop
 
