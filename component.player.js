@@ -20,7 +20,7 @@ class Player {
 	 * @param {number} mass
 	 */
 	constructor(x, y, mass, colour) {
-		this.blobs.push(new Blob(x, y, mass));
+		this.blobs.push(new Blob(x, y, mass, 0, 0));
 		this.colour = colour;
 	}
 }

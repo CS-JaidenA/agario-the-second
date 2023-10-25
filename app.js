@@ -39,7 +39,13 @@ wss.on("connection", ws => {
 	// handle messages
 
 	ws.on("message", message => {
-		world.players[uuid].mouse = JSON.parse(message);
+		message = JSON.parse(message);
+
+		if (message.type === "mouse")
+			return world.players[uuid].mouse = message.load;
+
+		if (message.type === "split")
+			return world.split(uuid);
 	});
 
 	// disconnect from client on close

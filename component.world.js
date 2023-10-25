@@ -1,8 +1,11 @@
+const Blob   = require("./component.blob.js");
 const Player = require("./component.player.js");
 
-const DEFAULT_WORLD_SIZE   = 40; // 282
-const DEFAULT_SPAWN_MASS   = 100;
-const DEFAULT_PELLET_COUNT = 100;
+const DEFAULT_WORLD_SIZE    = 40; // 282
+const DEFAULT_SPAWN_MASS    = 100;
+const DEFAULT_PELLET_COUNT  = 100;
+const DEFAULT_BLOB_MOMENTUM = 28;
+const DEFAULT_MIN_BLOB_SIZE = 50;
 
 class WorldPackage {
 	/** @type {Pellet[]} */
@@ -37,19 +40,37 @@ class World extends WorldPackageExtended {
 	/** @type {number} */
 	pelletCount = DEFAULT_PELLET_COUNT;
 
+	split = uuid => {
+		const player = this.players[uuid];
+
+		player.blobs.forEach(blob => {
+			if (blob.mass / 2 < DEFAULT_MIN_BLOB_SIZE) return;
+
+			blob.mass /= 2;
+
+			player.blobs.push(new Blob(
+				blob.x,
+				blob.y,
+				blob.mass,
+				DEFAULT_BLOB_MOMENTUM,
+				DEFAULT_BLOB_MOMENTUM,
+			));
+		});
+	};
+
 	tick = () => {
 		for (const uuid in this.players) {
 			const player = this.players[uuid];
 			const blob   = player.blobs[0];
 
-			const slowingRadius = blob.mass / (40 * 10); // 40 = gridbox width
+			const slowingRadius = 0.1;
 			const mouseDistance = Math.max(Math.abs(player.mouse.x), Math.abs(player.mouse.y));
 
 			const offset = mouseDistance > slowingRadius
 				? 1
 				: Math.max(mouseDistance * (1 / slowingRadius) - 0.1, 0);
 
-			const speed = blob.mass * 0.2 / 100 * offset;
+			const speed = blob.mass * 0.25 / 100 * offset;
 
 			const distanceX = Math.abs(player.mouse.x);
 			const distanceY = Math.abs(player.mouse.y);
@@ -62,8 +83,21 @@ class World extends WorldPackageExtended {
 			const vectorX = Math.cos(angle);
 			const vectorY = Math.sin(angle);
 
-			blob.x += adjustedSpeedX * vectorX;
-			blob.y += adjustedSpeedY * vectorY;
+			blob.x += adjustedSpeedX * vectorX + blob.xMomentum;
+			blob.y += adjustedSpeedY * vectorY + blob.yMomentum;
+
+			// decrease momentum
+			// set to 0 if applicable in case momentum was a decimal
+
+			if (blob.xMomentum > 0)
+				blob.xMomentum--;
+			else blob.xMomentum = 0;
+
+			if (blob.yMomentum > 0)
+				blob.yMomentum--;
+			else blob.yMomentum = 0;
+
+			// disallow moving past world borders
 
 			if (blob.x <= 0)
 				blob.x = 0;
