@@ -32,9 +32,17 @@ function update() {
 
 		const player = game.pack.players[uuid];
 		const blob   = player.blobs[0];
+		const radius = blob.mass; // TODO: Switch this to radius when added
 
 		const x = cnv.width  / 2 + (blob.x - mainPlayerBlob.x) * 40;
+
+		if (x + radius < 0 || x - radius > cnv.width)
+			continue;
+
 		const y = cnv.height / 2 + (blob.y - mainPlayerBlob.y) * 40;
+
+		if (y + radius < 0 || y - radius > cnv.height)
+			continue;
 
 		draw.circ(x, y, blob.mass, player.colour);
 	}

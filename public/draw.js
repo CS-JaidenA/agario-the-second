@@ -59,13 +59,17 @@ draw.grid = mainPlayerBlob => {
 
 	for (let i = 1; i < game.pack.height; i++) {
 		const y = grid.top + gridBox.size * i;
-		draw.line(grid.left, y, grid.right, y, ...gridBox.style);
+
+		if (y > 0 && y < cnv.height)
+			draw.line(grid.left, y, grid.right, y, ...gridBox.style);
 	}
 
 	// draw vertical grid lines
 
 	for (let i = 1; i < game.pack.width; i++) {
 		const x = grid.left + gridBox.size * i;
-		draw.line(x, grid.top, x, grid.bottom, ...gridBox.style);
+
+		if (x > 0 && x < cnv.width)
+			draw.line(x, grid.top, x, grid.bottom, ...gridBox.style);
 	}
 };
