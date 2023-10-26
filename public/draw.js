@@ -1,21 +1,32 @@
 const draw = {};
 
 draw.circ = (x, y, radius, colour) => {
+	const fillStyle = ctx.fillStyle;
+
 	ctx.beginPath();
 	ctx.arc(x, y, radius, 0, 2 * Math.PI);
 
 	ctx.fillStyle = colour;
 	ctx.fill();
+
+	ctx.fillStyle = fillStyle;
 };
 
 draw.rect = (x, y, width, height, colour) => {
+	const fillStyle = ctx.fillStyle;
+
 	ctx.rect(x, y, width, height);
 
 	ctx.fillStyle = colour;
 	ctx.fill();
+
+	ctx.fillStyle = fillStyle;
 };
 
 draw.line = (x1, y1, x2, y2, colour, thickness) => {
+	const strokeStyle = ctx.strokeStyle;
+	const lineWidth   = ctx.lineWidth;
+
 	ctx.beginPath();
 	ctx.moveTo(x1, y1);
 	ctx.lineTo(x2, y2);
@@ -23,22 +34,20 @@ draw.line = (x1, y1, x2, y2, colour, thickness) => {
 	ctx.strokeStyle = colour;
 	ctx.lineWidth   = thickness;
 	ctx.stroke();
+
+	ctx.strokeStyle = strokeStyle;
+	ctx.lineWidth   = lineWidth;
 };
 
-draw.grid = mainPlayerBlob => {
-	const gridBox = {
-		size:  40,
-		style: ["#313131", 1],
-	};
-
+draw.grid = bounds => {
 	const x = {
 		border: game.pack.height * gridBox.size,
-		offset: cnv.width / 2 - mainPlayerBlob.x * gridBox.size,
+		offset: cnv.width / 2 - bounds.x,
 	};
 
 	const y = {
 		border: game.pack.height * gridBox.size,
-		offset: cnv.height / 2 - mainPlayerBlob.y * gridBox.size,
+		offset: cnv.height / 2 - bounds.y,
 	};
 
 	// draw grid border

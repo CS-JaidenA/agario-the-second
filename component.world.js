@@ -70,7 +70,7 @@ class World extends WorldPackageExtended {
 				? 1
 				: Math.max(mouseDistance * (1 / slowingRadius) - 0.1, 0);
 
-			const speed = blob.mass * 0.25 / 100 * offset;
+			const speed = 2.2 * blob.mass ** -0.45 * offset;
 
 			const distanceX = Math.abs(player.mouse.x);
 			const distanceY = Math.abs(player.mouse.y);

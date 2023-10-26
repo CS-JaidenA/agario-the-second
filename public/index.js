@@ -4,6 +4,11 @@ const ws = new WebSocket(`${location.protocol === "http:" ? "ws" : "wss"}://${lo
 const cnv = document.getElementById("canvas");
 const ctx = cnv.getContext("2d");
 
+const gridBox = {
+	size:  40,
+	style: ["#313131", 1],
+};
+
 const game  = {
 	pack: {},
 	uuid: '',
@@ -20,26 +25,56 @@ const mouse = {
 function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
 
-	const mainPlayer     = game.pack.players[game.uuid];
-	const mainPlayerBlob = mainPlayer.blobs[0];
+	const player = game.pack.players[game.uuid];
+
+	const bounds = (function() {
+		const result = {
+			bottom: -Infinity,
+			right:  -Infinity,
+			left:    Infinity,
+			top:     Infinity,
+		};
+
+		player.blobs.forEach(blob => {
+			const x = blob.x * gridBox.size;
+			const y = blob.y * gridBox.size;
+
+			const bottom = y + blob.radius;
+			const right  = x + blob.radius;
+			const left   = x - blob.radius;
+			const top    = y - blob.radius;
+
+			if (bottom > result.bottom) result.bottom = bottom;
+			if (right  > result.right ) result.right  = right;
+			if (left   < result.left  ) result.left   = left;
+			if (top    < result.top   ) result.top    = top;
+		});
+
+		result.x = (result.left + result.right) / 2;
+		result.y = (result.top + result.bottom) / 2;
+
+		return result;
+	})();
+
+	const mainPlayerBlob = player.blobs[0];
 
 	// draw
 
-	draw.grid(mainPlayerBlob);
+	draw.grid(bounds);
 
 	for (const uuid in game.pack.players) {
 		if (uuid === game.uuid) continue;
 
 		const player = game.pack.players[uuid];
 		const blob   = player.blobs[0];
-		const radius = blob.mass; // TODO: Switch this to radius when added
+		const radius = blob.radius;
 
-		const x = cnv.width  / 2 + (blob.x - mainPlayerBlob.x) * 40;
+		const x = cnv.width  / 2 + (blob.x - bounds.x / gridBox.size) * 40;
 
 		if (x + radius < 0 || x - radius > cnv.width)
 			continue;
 
-		const y = cnv.height / 2 + (blob.y - mainPlayerBlob.y) * 40;
+		const y = cnv.height / 2 + (blob.y - bounds.y / gridBox.size) * 40;
 
 		if (y + radius < 0 || y - radius > cnv.height)
 			continue;
@@ -49,23 +84,28 @@ function update() {
 
 	// draw player
 
-	draw.circ(cnv.width / 2, cnv.height / 2, mainPlayerBlob.radius, mainPlayer.colour);
-
-	// draw mass
-
-	const mass    = String(mainPlayerBlob.mass);
-	const metrics = ctx.measureText(mass);
-
-	const massX   = cnv.width  / 2 - ((metrics.actualBoundingBoxLeft   + metrics.actualBoundingBoxRight  ) / 2);
-	const massY   = cnv.height / 2 + ((metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) / 2);
-
 	ctx.font        = "48px Ubuntu";
 	ctx.fillStyle   = "white";
 	ctx.lineWidth   = 2;
 	ctx.strokeStyle = "black";
 
-	ctx.fillText(mass, massX, massY);
-	ctx.strokeText(mass, massX, massY);
+	player.blobs.forEach(blob => {
+		const x = cnv.width  / 2;
+		const y = cnv.height / 2;
+
+		draw.circ(x, y, blob.radius, player.colour);
+
+		// draw mass
+
+		const mass    = String(blob.mass);
+		const metrics = ctx.measureText(mass);
+
+		const massX   = x - ((metrics.actualBoundingBoxLeft   + metrics.actualBoundingBoxRight  ) / 2);
+		const massY   = y + ((metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) / 2);
+
+		ctx.fillText(mass, massX, massY);
+		ctx.strokeText(mass, massX, massY);
+	});
 
 	// loop
 
@@ -112,5 +152,8 @@ window.addEventListener("keyup", e => {
 window.addEventListener("keydown", e => {
 	if (this.spacePressed || e.code !== "Space") return;
 	this.spacePressed = true;
+
 	// split
+
+	ws.send(JSON.stringify({ type: "split" }));
 });
