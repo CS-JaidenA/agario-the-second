@@ -56,8 +56,6 @@ function update() {
 		return result;
 	})();
 
-	const mainPlayerBlob = player.blobs[0];
-
 	// draw
 
 	draw.grid(bounds);
@@ -90,8 +88,8 @@ function update() {
 	ctx.strokeStyle = "black";
 
 	player.blobs.forEach(blob => {
-		const x = cnv.width  / 2;
-		const y = cnv.height / 2;
+		const x = cnv.width  / 2 + (blob.x - bounds.x / gridBox.size) * 40;
+		const y = cnv.height / 2 + (blob.y - bounds.y / gridBox.size) * 40;
 
 		draw.circ(x, y, blob.radius, player.colour);
 
