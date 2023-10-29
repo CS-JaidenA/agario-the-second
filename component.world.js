@@ -4,6 +4,7 @@ const Player = require("./component.player.js");
 const DEFAULT_WORLD_SIZE    = 40; // 282
 const DEFAULT_SPAWN_MASS    = 100;
 const DEFAULT_PELLET_COUNT  = 100;
+const DEFAULT_GRIDBOX_SIZE  = 40;
 const DEFAULT_BLOB_MOMENTUM = 28;
 const DEFAULT_MIN_BLOB_SIZE = 50;
 
@@ -28,11 +29,15 @@ class WorldPackageExtended extends WorldPackage {
 	/** @type {number} */
 	height = DEFAULT_WORLD_SIZE;
 
+	/** @type {number} */
+	gridBoxSize = DEFAULT_GRIDBOX_SIZE;
+
 	/** @returns {WorldPackageExtended} */
 	extdpack = () => ({
 		...this.pack(),
-		width:  this.width,
-		height: this.height,
+		width:       this.width,
+		height:      this.height,
+		gridBoxSize: this.gridBoxSize,
 	});
 }
 
@@ -46,14 +51,15 @@ class World extends WorldPackageExtended {
 		player.blobs.forEach(blob => {
 			if (blob.mass / 2 < DEFAULT_MIN_BLOB_SIZE) return;
 
-			blob.mass /= 2;
+			blob.mass  /= 2;
+			blob.radius = Math.sqrt(blob.mass * 100);
 
 			player.blobs.push(new Blob(
 				blob.x,
 				blob.y,
 				blob.mass,
-				DEFAULT_BLOB_MOMENTUM,
-				DEFAULT_BLOB_MOMENTUM,
+				DEFAULT_BLOB_MOMENTUM * (blob.prevXDirection === 0 ? Math.random() * 2 - 1 : blob.prevXDirection),
+				DEFAULT_BLOB_MOMENTUM * (blob.prevYDirection === 0 ? Math.random() * 2 - 1 : blob.prevYDirection),
 			));
 		});
 	};
@@ -83,8 +89,11 @@ class World extends WorldPackageExtended {
 				const vectorX = Math.cos(angle);
 				const vectorY = Math.sin(angle);
 
-				blob.x += adjustedSpeedX * vectorX + blob.xMomentum;
-				blob.y += adjustedSpeedY * vectorY + blob.yMomentum;
+				blob.prevXDirection = Math.sign(vectorX);
+				blob.prevYDirection = Math.sign(vectorY);
+
+				blob.x += adjustedSpeedX * vectorX + blob.xMomentum / this.gridBoxSize;
+				blob.y += adjustedSpeedY * vectorY + blob.yMomentum / this.gridBoxSize;
 
 				// decrease momentum
 				// set to 0 if applicable in case momentum was a decimal

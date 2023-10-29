@@ -17,6 +17,12 @@ class Blob {
 	/** @type {number} */
 	yMomentum;
 
+	/** @type {number} */
+	prevXDirection = 0;
+
+	/** @type {number} */
+	prevYDirection = 0;
+
 	/**
 	 * @param {number} x
 	 * @param {number} y

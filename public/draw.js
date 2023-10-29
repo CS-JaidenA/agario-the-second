@@ -41,20 +41,20 @@ draw.line = (x1, y1, x2, y2, colour, thickness) => {
 
 draw.grid = bounds => {
 	const x = {
-		border: game.pack.height * gridBox.size,
+		border: game.pack.height * game.pack.gridBoxSize,
 		offset: cnv.width / 2 - bounds.x,
 	};
 
 	const y = {
-		border: game.pack.height * gridBox.size,
+		border: game.pack.height * game.pack.gridBoxSize,
 		offset: cnv.height / 2 - bounds.y,
 	};
 
 	// draw grid border
 
 	const grid = {
-		bottom: y.offset + game.pack.height * gridBox.size,
-		right:  x.offset + game.pack.width  * gridBox.size,
+		bottom: y.offset + game.pack.height * game.pack.gridBoxSize,
+		right:  x.offset + game.pack.width  * game.pack.gridBoxSize,
 		left:   x.offset,
 		top:    y.offset,
 	};
@@ -67,7 +67,7 @@ draw.grid = bounds => {
 	// draw horizontal grid lines
 
 	for (let i = 1; i < game.pack.height; i++) {
-		const y = grid.top + gridBox.size * i;
+		const y = grid.top + game.pack.gridBoxSize * i;
 
 		if (y > 0 && y < cnv.height)
 			draw.line(grid.left, y, grid.right, y, ...gridBox.style);
@@ -76,7 +76,7 @@ draw.grid = bounds => {
 	// draw vertical grid lines
 
 	for (let i = 1; i < game.pack.width; i++) {
-		const x = grid.left + gridBox.size * i;
+		const x = grid.left + game.pack.gridBoxSize * i;
 
 		if (x > 0 && x < cnv.width)
 			draw.line(x, grid.top, x, grid.bottom, ...gridBox.style);
