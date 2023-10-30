@@ -1,3 +1,5 @@
+'use strict';
+
 const Blob   = require("./component.blob.js");
 const Player = require("./component.player.js");
 
@@ -45,80 +47,64 @@ class World extends WorldPackageExtended {
 	/** @type {number} */
 	pelletCount = DEFAULT_PELLET_COUNT;
 
-	split = uuid => {
-		const player = this.players[uuid];
-
-		player.blobs.forEach(blob => {
-			if (blob.mass / 2 < DEFAULT_MIN_BLOB_SIZE) return;
-
-			blob.mass  /= 2;
-			blob.radius = Math.sqrt(blob.mass * 100);
-
-			player.blobs.push(new Blob(
-				blob.x,
-				blob.y,
-				blob.mass,
-				DEFAULT_BLOB_MOMENTUM * (blob.prevXDirection === 0 ? Math.random() * 2 - 1 : blob.prevXDirection),
-				DEFAULT_BLOB_MOMENTUM * (blob.prevYDirection === 0 ? Math.random() * 2 - 1 : blob.prevYDirection),
-			));
-		});
-	};
-
 	tick = () => {
-		for (const uuid in this.players) {
-			const player = this.players[uuid];
+		for (const player of Object.values(this.players))
+			player.tick(this);
 
-			for (const blob of player.blobs) {
-				const slowingRadius = 0.1;
-				const mouseDistance = Math.max(Math.abs(player.mouse.x), Math.abs(player.mouse.y));
+		// for (const player of Object.values(this.players)) {
+		// 	const player = this.players[uuid];
 
-				const offset = mouseDistance > slowingRadius
-					? 1
-					: Math.max(mouseDistance * (1 / slowingRadius) - 0.1, 0);
+		// 	for (const blob of player.blobs) {
+		// 		const slowingRadius = 0.1;
+		// 		const mouseDistance = Math.max(Math.abs(player.mouse.x), Math.abs(player.mouse.y));
 
-				const speed = 2.2 * blob.mass ** -0.45 * offset;
+		// 		const offset = mouseDistance > slowingRadius
+		// 			? 1
+		// 			: Math.max(mouseDistance * (1 / slowingRadius) - 0.1, 0);
 
-				const distanceX = Math.abs(player.mouse.x);
-				const distanceY = Math.abs(player.mouse.y);
+		// 		const speed = 2.2 * blob.mass ** -0.45 * offset;
 
-				const adjustedSpeedX = (distanceX > distanceY ? speed : speed * distanceX / distanceY) || 0;
-				const adjustedSpeedY = (distanceY > distanceX ? speed : speed * distanceY / distanceX) || 0;
+		// 		const distanceX = Math.abs(player.mouse.x);
+		// 		const distanceY = Math.abs(player.mouse.y);
 
-				const angle = Math.atan2(player.mouse.y, player.mouse.x);
+		// 		const adjustedSpeedX = (distanceX > distanceY ? speed : speed * distanceX / distanceY) || 0;
+		// 		const adjustedSpeedY = (distanceY > distanceX ? speed : speed * distanceY / distanceX) || 0;
 
-				const vectorX = Math.cos(angle);
-				const vectorY = Math.sin(angle);
+		// 		const angle = Math.atan2(player.mouse.y, player.mouse.x);
 
-				blob.prevXDirection = Math.sign(vectorX);
-				blob.prevYDirection = Math.sign(vectorY);
+		// 		const vectorX = Math.cos(angle);
+		// 		const vectorY = Math.sin(angle);
 
-				blob.x += adjustedSpeedX * vectorX + blob.xMomentum / this.gridBoxSize;
-				blob.y += adjustedSpeedY * vectorY + blob.yMomentum / this.gridBoxSize;
+		// 		blob.prevXDirection = Math.sign(vectorX);
+		// 		blob.prevYDirection = Math.sign(vectorY);
 
-				// decrease momentum
-				// set to 0 if applicable in case momentum was a decimal
+		// 		blob.x += adjustedSpeedX * vectorX + blob.xMomentum / this.gridBoxSize;
+		// 		blob.y += adjustedSpeedY * vectorY + blob.yMomentum / this.gridBoxSize;
 
-				if (blob.xMomentum > 0)
-					blob.xMomentum--;
-				else blob.xMomentum = 0;
+		// 		// decrease momentum
+		// 		// set to 0 if applicable in case momentum was a decimal
 
-				if (blob.yMomentum > 0)
-					blob.yMomentum--;
-				else blob.yMomentum = 0;
+		// 		if (blob.xMomentum > 0)
+		// 			blob.xMomentum--;
+		// 		else blob.xMomentum = 0;
 
-				// disallow moving past world borders
+		// 		if (blob.yMomentum > 0)
+		// 			blob.yMomentum--;
+		// 		else blob.yMomentum = 0;
 
-				if (blob.x <= 0)
-					blob.x = 0;
-				else if (blob.x >= this.width)
-					blob.x = this.width;
+		// 		// disallow moving past world borders
 
-				if (blob.y <= 0)
-					blob.y = 0;
-				else if (blob.y >= this.height)
-					blob.y = this.height;
-			}
-		}
+		// 		if (blob.x <= 0)
+		// 			blob.x = 0;
+		// 		else if (blob.x >= this.width)
+		// 			blob.x = this.width;
+
+		// 		if (blob.y <= 0)
+		// 			blob.y = 0;
+		// 		else if (blob.y >= this.height)
+		// 			blob.y = this.height;
+		// 	}
+		// }
 	};
 
 	connect = uuid => { this.players[uuid] = new Player(

@@ -1,9 +1,17 @@
-class Blob {
-	/** @type {number} */
-	x;
+'use strict';
 
-	/** @type {number} */
-	y;
+class Blob {
+	x = {
+		speedPx: 0,
+		position: 0,
+		momentum: 0,
+	};
+
+	y = {
+		speedPx: 0,
+		position: 0,
+		momentum: 0,
+	};
 
 	/** @type {number} */
 	mass;
@@ -11,33 +19,29 @@ class Blob {
 	/** @type {number} */
 	radius;
 
-	/** @type {number} */
-	xMomentum;
-
-	/** @type {number} */
-	yMomentum;
-
-	/** @type {number} */
-	prevXDirection = 0;
-
-	/** @type {number} */
-	prevYDirection = 0;
+	/** @param {number} mass */
+	updateMass(mass) {
+		this.mass   = mass;
+		this.radius = Math.sqrt(this.mass * 100);
+	}
 
 	/**
 	 * @param {number} x
 	 * @param {number} y
 	 * @param {number} mass Undefined for spawn mass.
 	 */
-	constructor(x, y, mass, xMomentum, yMomentum) {
-		this.x = x;
-		this.y = y;
+	constructor(xPosition, yPosition, xMomentum, yMomentum, mass) {
+		this.x.position = xPosition;
+		this.y.position = yPosition;
 
-		this.mass = mass;
-		this.radius = Math.sqrt(this.mass * 100);
+		this.x.momentum = xMomentum;
+		this.y.momentum = yMomentum;
 
-		this.xMomentum = xMomentum;
-		this.yMomentum = yMomentum;
+		this.updateMass(mass);
 	}
+
+	static MOMENTUM      = 28;
+	static MIN_BLOB_SIZE = 17.5;
 }
 
 module.exports = Blob;

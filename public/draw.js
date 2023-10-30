@@ -1,3 +1,5 @@
+'use strict';
+
 const draw = {};
 
 draw.circ = (x, y, radius, colour) => {

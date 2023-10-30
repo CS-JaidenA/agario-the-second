@@ -1,3 +1,5 @@
+'use strict';
+
 const ws = new WebSocket(`${location.protocol === "http:" ? "ws" : "wss"}://${location.host}`);
 
 /** @type {HTMLCanvasElement} */
@@ -25,6 +27,8 @@ const mouse = {
 function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
 
+	console.log(game);
+
 	const player = game.pack.players[game.uuid];
 
 	const bounds = (function() {
@@ -36,8 +40,8 @@ function update() {
 		};
 
 		player.blobs.forEach(blob => {
-			const x = blob.x * game.pack.gridBoxSize;
-			const y = blob.y * game.pack.gridBoxSize;
+			const x = blob.x.position * game.pack.gridBoxSize;
+			const y = blob.y.position * game.pack.gridBoxSize;
 
 			const bottom = y + blob.radius;
 			const right  = x + blob.radius;
@@ -67,12 +71,12 @@ function update() {
 		const blob   = player.blobs[0];
 		const radius = blob.radius;
 
-		const x = cnv.width  / 2 + (blob.x - bounds.x / game.pack.gridBoxSize) * 40;
+		const x = cnv.width  / 2 + (blob.x.position - bounds.x / game.pack.gridBoxSize) * 40;
 
 		if (x + radius < 0 || x - radius > cnv.width)
 			continue;
 
-		const y = cnv.height / 2 + (blob.y - bounds.y / game.pack.gridBoxSize) * 40;
+		const y = cnv.height / 2 + (blob.y.position - bounds.y / game.pack.gridBoxSize) * 40;
 
 		if (y + radius < 0 || y - radius > cnv.height)
 			continue;
@@ -88,8 +92,8 @@ function update() {
 	ctx.strokeStyle = "black";
 
 	player.blobs.forEach(blob => {
-		const x = cnv.width  / 2 + (blob.x - bounds.x / game.pack.gridBoxSize) * 40;
-		const y = cnv.height / 2 + (blob.y - bounds.y / game.pack.gridBoxSize) * 40;
+		const x = cnv.width  / 2 + (blob.x.position - bounds.x / game.pack.gridBoxSize) * 40;
+		const y = cnv.height / 2 + (blob.y.position - bounds.y / game.pack.gridBoxSize) * 40;
 
 		draw.circ(x, y, blob.radius, player.colour);
 

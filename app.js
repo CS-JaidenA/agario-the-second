@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+'use strict';
+
 // express
 
 const express    = require("express");
@@ -45,7 +47,7 @@ wss.on("connection", ws => {
 			return world.players[uuid].mouse = message.load;
 
 		if (message.type === "split")
-			return world.split(uuid);
+			return world.players[uuid].split();
 	});
 
 	// disconnect from client on close
@@ -65,7 +67,7 @@ setInterval(() => {
 
 	const pack = JSON.stringify({ pack: world.pack() });
 	wss.clients.forEach(client => client.send(pack));
-}, 25);
+}, 2500);
 
 app.use(express.static("public"));
 server.listen(3000, () => console.log("\n[!] Listening on port 3000.\n"));
