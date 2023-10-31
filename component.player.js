@@ -3,8 +3,6 @@
 const Blob  = require("./component.blob.js");
 const World = require("./component.world.js");
 
-const SPEED_PX = 5;
-
 class Player {
 	/** @type {Blob[]} */
 	blobs = [];
@@ -39,19 +37,17 @@ class Player {
 		if (!distanceX && !distanceY)
 			return;
 
+		const speedPx = (2 * blob.mass ** -0.45) * world.gridBoxSize;
+
 		// speeds are adjusted so that blob x/y coords meet mouse at same time
 
-		blob.x.speedPx = distanceX > distanceY ? SPEED_PX : SPEED_PX * distanceX / distanceY;
-		blob.y.speedPx = distanceY > distanceX ? SPEED_PX : SPEED_PX * distanceY / distanceX;
-
-		console.log(1, distanceX, distanceY);
+		blob.x.speedPx = distanceX > distanceY ? speedPx : speedPx * distanceX / distanceY;
+		blob.y.speedPx = distanceY > distanceX ? speedPx : speedPx * distanceY / distanceX;
 
 		// add momentum
 
 		blob.x.speedPx += blob.x.momentum;
 		blob.y.speedPx += blob.y.momentum;
-
-		console.log(2, blob.x.speedPx, blob.x.momentum);
 
 		// decrease momentum
 		// set to 0 if applicable in case momentum was a decimal
@@ -71,10 +67,20 @@ class Player {
 
 		// move blob
 
-		blob.x.position += blob.x.speedPx / world.gridBoxSize / world.width  * vector.x;
-		blob.y.position += blob.y.speedPx / world.gridBoxSize / world.height * vector.y;
+		blob.x.position += blob.x.speedPx / world.gridBoxSize * vector.x;
+		blob.y.position += blob.y.speedPx / world.gridBoxSize * vector.y;
 
-		console.log(3, blob.x.position, blob.x.speedPx, world.gridBoxSize, world.width, vector.x, '\n');
+		// disallow moving past world borders
+
+		if (blob.x.position <= 0)
+			blob.x.position = 0;
+		else if (blob.x.position >= world.width)
+			blob.x.position = world.width;
+
+		if (blob.y.position <= 0)
+			blob.y.position = 0;
+		else if (blob.y.position >= world.height)
+			blob.y.position = world.height;
 	}) }
 
 	/**
@@ -83,7 +89,7 @@ class Player {
 	 * @param {number} mass
 	 */
 	constructor(x, y, mass, colour) {
-		this.blobs.push(new Blob(x, y, mass, 0, 0));
+		this.blobs.push(new Blob(x, y, 0, 0, mass));
 		this.colour = colour;
 	}
 }

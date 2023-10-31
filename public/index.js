@@ -27,17 +27,13 @@ const mouse = {
 function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
 
-	console.log(game);
-
 	const player = game.pack.players[game.uuid];
 
 	const bounds = (function() {
-		const result = {
-			bottom: -Infinity,
-			right:  -Infinity,
-			left:    Infinity,
-			top:     Infinity,
-		};
+		const bottom = -Infinity;
+		const right  = -Infinity;
+		const left   =  Infinity;
+		const top    =  Infinity;
 
 		player.blobs.forEach(blob => {
 			const x = blob.x.position * game.pack.gridBoxSize;
@@ -48,16 +44,16 @@ function update() {
 			const left   = x - blob.radius;
 			const top    = y - blob.radius;
 
-			if (bottom > result.bottom) result.bottom = bottom;
-			if (right  > result.right ) result.right  = right;
-			if (left   < result.left  ) result.left   = left;
-			if (top    < result.top   ) result.top    = top;
+			if (bottom > bottom) bottom = bottom;
+			if (right  > right ) right  = right;
+			if (left   < left  ) left   = left;
+			if (top    < top   ) top    = top;
 		});
 
-		result.x = (result.left + result.right) / 2;
-		result.y = (result.top + result.bottom) / 2;
-
-		return result;
+		return {
+			x: (result.left + result.right) / 2,
+			y: (result.top + result.bottom) / 2,
+		};
 	})();
 
 	// draw

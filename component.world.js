@@ -50,61 +50,6 @@ class World extends WorldPackageExtended {
 	tick = () => {
 		for (const player of Object.values(this.players))
 			player.tick(this);
-
-		// for (const player of Object.values(this.players)) {
-		// 	const player = this.players[uuid];
-
-		// 	for (const blob of player.blobs) {
-		// 		const slowingRadius = 0.1;
-		// 		const mouseDistance = Math.max(Math.abs(player.mouse.x), Math.abs(player.mouse.y));
-
-		// 		const offset = mouseDistance > slowingRadius
-		// 			? 1
-		// 			: Math.max(mouseDistance * (1 / slowingRadius) - 0.1, 0);
-
-		// 		const speed = 2.2 * blob.mass ** -0.45 * offset;
-
-		// 		const distanceX = Math.abs(player.mouse.x);
-		// 		const distanceY = Math.abs(player.mouse.y);
-
-		// 		const adjustedSpeedX = (distanceX > distanceY ? speed : speed * distanceX / distanceY) || 0;
-		// 		const adjustedSpeedY = (distanceY > distanceX ? speed : speed * distanceY / distanceX) || 0;
-
-		// 		const angle = Math.atan2(player.mouse.y, player.mouse.x);
-
-		// 		const vectorX = Math.cos(angle);
-		// 		const vectorY = Math.sin(angle);
-
-		// 		blob.prevXDirection = Math.sign(vectorX);
-		// 		blob.prevYDirection = Math.sign(vectorY);
-
-		// 		blob.x += adjustedSpeedX * vectorX + blob.xMomentum / this.gridBoxSize;
-		// 		blob.y += adjustedSpeedY * vectorY + blob.yMomentum / this.gridBoxSize;
-
-		// 		// decrease momentum
-		// 		// set to 0 if applicable in case momentum was a decimal
-
-		// 		if (blob.xMomentum > 0)
-		// 			blob.xMomentum--;
-		// 		else blob.xMomentum = 0;
-
-		// 		if (blob.yMomentum > 0)
-		// 			blob.yMomentum--;
-		// 		else blob.yMomentum = 0;
-
-		// 		// disallow moving past world borders
-
-		// 		if (blob.x <= 0)
-		// 			blob.x = 0;
-		// 		else if (blob.x >= this.width)
-		// 			blob.x = this.width;
-
-		// 		if (blob.y <= 0)
-		// 			blob.y = 0;
-		// 		else if (blob.y >= this.height)
-		// 			blob.y = this.height;
-		// 	}
-		// }
 	};
 
 	connect = uuid => { this.players[uuid] = new Player(

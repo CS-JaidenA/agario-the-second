@@ -21,8 +21,9 @@ class Blob {
 
 	/** @param {number} mass */
 	updateMass(mass) {
+
 		this.mass   = mass;
-		this.radius = Math.sqrt(this.mass * 100);
+		this.radius = Math.sqrt(mass * 100);
 	}
 
 	/**
