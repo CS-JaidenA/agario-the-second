@@ -15,19 +15,45 @@ class Player {
 	/** @type {string} */
 	colour;
 
-	split() { this.blobs.forEach(blob => {
-		if (blob.mass / 2 < Blob.MIN_BLOB_SIZE) return;
+	split() {
+		// loop through every blob in a random order and split them
+		// stop once all of the blobs you started with have been split,
+		// or you reach the max blob count. Whichever comes first.
 
-		blob.updateMass(blob.mass / 2);
+		const startingBlobCount       = this.blobs.length;
+		const unsplittedStartingBlobs = this.blobs.slice(0, startingBlobCount);
 
-		this.blobs.push(new Blob(
-			blob.x.position,
-			blob.y.position,
-			blob.x.speedPx > blob.y.speedPx ? Blob.MOMENTUM : blob.x.speedPx / blob.y.speedPx * Blob.MOMENTUM,
-			blob.y.speedPx > blob.x.speedPx ? Blob.MOMENTUM : blob.y.speedPx / blob.x.speedPx * Blob.MOMENTUM,
-			blob.mass,
-		));
-	}) }
+		for (let i = 0; i < startingBlobCount; i++) {
+			// check if there are too many blobs
+
+			if (this.blobs.length >= Player.MAX_BLOB_COUNT)
+				break;
+
+			// select random blob
+
+			const index = Math.floor(Math.random() * unsplittedStartingBlobs.length);
+			const blob  = unsplittedStartingBlobs[index];
+
+			// remove blob from unsplitted
+
+			unsplittedStartingBlobs.splice(index, 1);
+
+			// split blob if able
+
+			if (blob.mass / 2 < Blob.MIN_BLOB_SIZE)
+				continue;
+
+			blob.updateMass(blob.mass / 2);
+
+			this.blobs.push(new Blob(
+				blob.x.position,
+				blob.y.position,
+				blob.x.speedPx > blob.y.speedPx ? Blob.MOMENTUM : blob.x.speedPx / blob.y.speedPx * Blob.MOMENTUM,
+				blob.y.speedPx > blob.x.speedPx ? Blob.MOMENTUM : blob.y.speedPx / blob.x.speedPx * Blob.MOMENTUM,
+				blob.mass,
+			));
+		}
+	}
 
 	/** @param {World} world */
 	tick(world) { this.blobs.forEach(blob => {
@@ -92,6 +118,8 @@ class Player {
 		this.blobs.push(new Blob(x, y, 0, 0, mass));
 		this.colour = colour;
 	}
+
+	static MAX_BLOB_COUNT = 16;
 }
 
 module.exports = Player;

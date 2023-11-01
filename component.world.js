@@ -1,14 +1,11 @@
 'use strict';
 
-const Blob   = require("./component.blob.js");
 const Player = require("./component.player.js");
 
 const DEFAULT_WORLD_SIZE    = 40; // 282
-const DEFAULT_SPAWN_MASS    = 100;
+const DEFAULT_SPAWN_MASS    = 1000; // 100
 const DEFAULT_PELLET_COUNT  = 100;
 const DEFAULT_GRIDBOX_SIZE  = 40;
-const DEFAULT_BLOB_MOMENTUM = 28;
-const DEFAULT_MIN_BLOB_SIZE = 50;
 
 class WorldPackage {
 	/** @type {Pellet[]} */

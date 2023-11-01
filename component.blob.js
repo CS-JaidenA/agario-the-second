@@ -42,7 +42,7 @@ class Blob {
 	}
 
 	static MOMENTUM      = 28;
-	static MIN_BLOB_SIZE = 17.5;
+	static MIN_BLOB_SIZE = 20;
 }
 
 module.exports = Blob;

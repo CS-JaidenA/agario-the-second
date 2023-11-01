@@ -30,10 +30,10 @@ function update() {
 	const player = game.pack.players[game.uuid];
 
 	const bounds = (function() {
-		const bottom = -Infinity;
-		const right  = -Infinity;
-		const left   =  Infinity;
-		const top    =  Infinity;
+		let bottommost = -Infinity;
+		let rightmost  = -Infinity;
+		let leftmost   = +Infinity;
+		let topmost    = +Infinity;
 
 		player.blobs.forEach(blob => {
 			const x = blob.x.position * game.pack.gridBoxSize;
@@ -44,15 +44,15 @@ function update() {
 			const left   = x - blob.radius;
 			const top    = y - blob.radius;
 
-			if (bottom > bottom) bottom = bottom;
-			if (right  > right ) right  = right;
-			if (left   < left  ) left   = left;
-			if (top    < top   ) top    = top;
+			if (bottom > bottommost) bottommost = bottom;
+			if (right  > rightmost ) rightmost  = right;
+			if (left   < leftmost  ) leftmost   = left;
+			if (top    < topmost   ) topmost    = top;
 		});
 
 		return {
-			x: (result.left + result.right) / 2,
-			y: (result.top + result.bottom) / 2,
+			x: (leftmost + rightmost) / 2,
+			y: (topmost + bottommost) / 2,
 		};
 	})();
 
@@ -95,7 +95,7 @@ function update() {
 
 		// draw mass
 
-		const mass    = String(blob.mass);
+		const mass    = String(Math.round(blob.mass));
 		const metrics = ctx.measureText(mass);
 
 		const massX   = x - ((metrics.actualBoundingBoxLeft   + metrics.actualBoundingBoxRight  ) / 2);
@@ -143,13 +143,13 @@ window.dispatchEvent(new Event("resize"));
 
 let spacePressed = false;
 
-window.addEventListener("keyup", e => {
-	if (e.code === "Space") spacePressed = false;
+window.addEventListener("keyup", event => {
+	if (event.code === "Space") spacePressed = false;
 });
 
-window.addEventListener("keydown", e => {
-	if (this.spacePressed || e.code !== "Space") return;
-	this.spacePressed = true;
+window.addEventListener("keydown", event => {
+	if (spacePressed || event.code !== "Space") return;
+	spacePressed = true;
 
 	// split
 
