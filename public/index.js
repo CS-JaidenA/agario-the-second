@@ -53,12 +53,18 @@ function update() {
 		return {
 			x: (leftmost + rightmost) / 2,
 			y: (topmost + bottommost) / 2,
+			width: rightmost - leftmost,
+			height: bottommost - topmost,
 		};
+	})();
+
+	const scaleFactor = (function() {
+		return 1 - Math.max(bounds.width, bounds.height) / 1000;
 	})();
 
 	// draw
 
-	draw.grid(bounds);
+	draw.grid(bounds, scaleFactor);
 
 	for (const uuid in game.pack.players) {
 		if (uuid === game.uuid) continue;
@@ -77,7 +83,7 @@ function update() {
 		if (y + radius < 0 || y - radius > cnv.height)
 			continue;
 
-		draw.circ(x, y, blob.radius, player.colour);
+		draw.circ(x, y, scaleFactor * blob.radius, player.colour);
 	}
 
 	// draw player
@@ -91,7 +97,7 @@ function update() {
 		const x = cnv.width  / 2 + (blob.x.position - bounds.x / game.pack.gridBoxSize) * 40;
 		const y = cnv.height / 2 + (blob.y.position - bounds.y / game.pack.gridBoxSize) * 40;
 
-		draw.circ(x, y, blob.radius, player.colour);
+		draw.circ(x, y, scaleFactor * blob.radius, player.colour);
 
 		// draw mass
 

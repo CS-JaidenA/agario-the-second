@@ -48,8 +48,8 @@ class Player {
 			this.blobs.push(new Blob(
 				blob.x.position,
 				blob.y.position,
-				blob.x.speedPx > blob.y.speedPx ? Blob.MOMENTUM : blob.x.speedPx / blob.y.speedPx * Blob.MOMENTUM,
-				blob.y.speedPx > blob.x.speedPx ? Blob.MOMENTUM : blob.y.speedPx / blob.x.speedPx * Blob.MOMENTUM,
+				Math.sign(this.mouse.x) * (blob.x.speedPx > blob.y.speedPx ? Blob.MOMENTUM : blob.x.speedPx / blob.y.speedPx * Blob.MOMENTUM),
+				Math.sign(this.mouse.y) * (blob.y.speedPx > blob.x.speedPx ? Blob.MOMENTUM : blob.y.speedPx / blob.x.speedPx * Blob.MOMENTUM),
 				blob.mass,
 			));
 		}
@@ -70,22 +70,6 @@ class Player {
 		blob.x.speedPx = distanceX > distanceY ? speedPx : speedPx * distanceX / distanceY;
 		blob.y.speedPx = distanceY > distanceX ? speedPx : speedPx * distanceY / distanceX;
 
-		// add momentum
-
-		blob.x.speedPx += blob.x.momentum;
-		blob.y.speedPx += blob.y.momentum;
-
-		// decrease momentum
-		// set to 0 if applicable in case momentum was a decimal
-
-		if (blob.x.momentum >= 1)
-			blob.x.momentum--;
-		else blob.x.momentum = 0;
-
-		if (blob.y.momentum >= 1)
-			blob.y.momentum--;
-		else blob.y.momentum = 0;
-
 		// calculate vector
 
 		const angle  = Math.atan2(this.mouse.y, this.mouse.x);
@@ -93,8 +77,19 @@ class Player {
 
 		// move blob
 
-		blob.x.position += blob.x.speedPx / world.gridBoxSize * vector.x;
-		blob.y.position += blob.y.speedPx / world.gridBoxSize * vector.y;
+		blob.x.position += (blob.x.speedPx * Math.sign(vector.x) + blob.x.momentum) / world.gridBoxSize * Math.abs(vector.x);
+		blob.y.position += (blob.y.speedPx * Math.sign(vector.y) + blob.y.momentum) / world.gridBoxSize * Math.abs(vector.y);
+
+		// decrease momentum
+		// set to 0 if applicable in case momentum was a decimal
+
+		if (Math.abs(blob.x.momentum) >= 1)
+			blob.x.momentum = Math.sign(blob.x.momentum) * (Math.abs(blob.x.momentum) - 1);
+		else blob.x.momentum = 0;
+
+		if (Math.abs(blob.y.momentum) >= 1)
+			blob.y.momentum = Math.sign(blob.y.momentum) * (Math.abs(blob.y.momentum) - 1);
+		else blob.y.momentum = 0;
 
 		// disallow moving past world borders
 

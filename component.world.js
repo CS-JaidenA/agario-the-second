@@ -52,7 +52,7 @@ class World extends WorldPackageExtended {
 	connect = uuid => { this.players[uuid] = new Player(
 		Math.random() * this.width,
 		Math.random() * this.height,
-		DEFAULT_SPAWN_MASS,
+		Math.random() * DEFAULT_SPAWN_MASS, // TODO: REVISE THIS
 		`rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
 	)};
 
