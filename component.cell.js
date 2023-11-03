@@ -69,6 +69,31 @@ class Cell {
 		this.x += this.xMomentum / world.gridboxDimension;
 		this.y += this.yMomentum / world.gridboxDimension;
 
+		// collision detection
+
+		if (this.xMomentum === 0 && this.yMomentum === 0) for (const cell of player.cells) {
+			if (this === cell) continue;
+
+			const difference = Math.hypot(
+				Math.abs(this.x - cell.x),
+				Math.abs(this.y - cell.y)
+			);
+
+			if (difference > (this.radius + cell.radius) / world.gridboxDimension)
+				continue;
+
+			const xLeftSideDifference  = Math.abs(this.x - (cell.x - cell.radius / world.gridboxDimension));
+			const xRightSideDifference = Math.abs(this.x - (cell.x + cell.radius / world.gridboxDimension));
+			const xVector = xLeftSideDifference < xRightSideDifference ? -1 : 1;
+
+			const yTopSideDifference    = Math.abs(this.y - (cell.y - cell.radius / world.gridboxDimension));
+			const yBottomSideDifference = Math.abs(this.y - (cell.y + cell.radius / world.gridboxDimension));
+			const yVector = yTopSideDifference < yBottomSideDifference ? -1 : 1;
+
+			this.x += Math.abs(this.xVelocity) * xVector;
+			this.y += Math.abs(this.yVelocity) * yVector;
+		}
+
 		// decrease momentum
 
 		const absXMomentum = Math.abs(this.xMomentum);
@@ -100,7 +125,7 @@ class Cell {
 	 */
 	constructor(x, y, xMomentum, yMomentum, mass) {
 		this.x = x;
-		this.x = y;
+		this.y = y;
 
 		this.xMomentum = xMomentum;
 		this.yMomentum = yMomentum;
@@ -108,7 +133,7 @@ class Cell {
 		this.updateMass(mass);
 	}
 
-	static MOMENTUM      = 28;
+	static MOMENTUM      = 30;
 	static RESISTANCE    = 1;
 	static MIN_CELL_SIZE = 20;
 }

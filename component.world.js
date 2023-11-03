@@ -2,7 +2,7 @@
 
 const Player = require("./component.player.js");
 
-const DEFAULT_WORLD_SIZE    = 10; // 282
+const DEFAULT_WORLD_SIZE    = 20; // 200 or 282?
 const DEFAULT_SPAWN_MASS    = 100; // 100
 const DEFAULT_PELLET_COUNT  = 100;
 const DEFAULT_GRIDBOX_SIZE  = 40;
