@@ -1,11 +1,11 @@
 'use strict';
 
-const Blob  = require("./component.blob.js");
+const Cell  = require("./component.cell.js");
 const World = require("./component.world.js");
 
 class Player {
-	/** @type {Blob[]} */
-	blobs = [];
+	/** @type {Cell[]} */
+	cells = [];
 
 	mouse = {
 		x: 0,
@@ -16,93 +16,47 @@ class Player {
 	colour;
 
 	split() {
-		// loop through every blob in a random order and split them
-		// stop once all of the blobs you started with have been split,
-		// or you reach the max blob count. Whichever comes first.
+		// loop through every cell in a random order and split them
+		// stop once all of the cells you started with have been split,
+		// or you reach the max cell count. Whichever comes first.
 
-		const startingBlobCount       = this.blobs.length;
-		const unsplittedStartingBlobs = this.blobs.slice(0, startingBlobCount);
+		const startingCellCount       = this.cells.length;
+		const unsplittedStartingCells = this.cells.slice(0, startingCellCount);
 
-		for (let i = 0; i < startingBlobCount; i++) {
-			// check if there are too many blobs
+		for (let i = 0; i < startingCellCount; i++) {
+			// break if there are too many cells
 
-			if (this.blobs.length >= Player.MAX_BLOB_COUNT)
+			if (this.cells.length >= Player.MAX_CELL_COUNT)
 				break;
 
-			// select random blob
+			// select random cell
 
-			const index = Math.floor(Math.random() * unsplittedStartingBlobs.length);
-			const blob  = unsplittedStartingBlobs[index];
+			const index = Math.floor(Math.random() * unsplittedStartingCells.length);
+			const cell  = unsplittedStartingCells[index];
 
-			// remove blob from unsplitted
+			// remove cell from unsplitted
 
-			unsplittedStartingBlobs.splice(index, 1);
+			unsplittedStartingCells.splice(index, 1);
 
-			// split blob if able
+			// split cell if able
 
-			if (blob.mass / 2 < Blob.MIN_BLOB_SIZE)
+			if (cell.mass / 2 < Cell.MIN_CELL_SIZE)
 				continue;
 
-			blob.updateMass(blob.mass / 2);
+			cell.updateMass(cell.mass / 2);
 
-			this.blobs.push(new Blob(
-				blob.x.position,
-				blob.y.position,
-				Math.sign(this.mouse.x) * (blob.x.speedPx > blob.y.speedPx ? Blob.MOMENTUM : blob.x.speedPx / blob.y.speedPx * Blob.MOMENTUM),
-				Math.sign(this.mouse.y) * (blob.y.speedPx > blob.x.speedPx ? Blob.MOMENTUM : blob.y.speedPx / blob.x.speedPx * Blob.MOMENTUM),
-				blob.mass,
+			this.cells.push(new Cell(
+				cell.x,
+				cell.y,
+				cell.xVelocity > cell.yVelocity ? Cell.MOMENTUM : cell.xVelocity / cell.yVelocity * Cell.MOMENTUM,
+				cell.yVelocity > cell.xVelocity ? Cell.MOMENTUM : cell.yVelocity / cell.xVelocity * Cell.MOMENTUM,
+				cell.mass,
 			));
 		}
 	}
 
 	/** @param {World} world */
-	tick(world) { this.blobs.forEach(blob => {
-		const distanceX = Math.abs(this.mouse.x);
-		const distanceY = Math.abs(this.mouse.y);
-
-		if (!distanceX && !distanceY)
-			return;
-
-		const speedPx = (2 * blob.mass ** -0.45) * world.gridBoxSize;
-
-		// speeds are adjusted so that blob x/y coords meet mouse at same time
-
-		blob.x.speedPx = distanceX > distanceY ? speedPx : speedPx * distanceX / distanceY;
-		blob.y.speedPx = distanceY > distanceX ? speedPx : speedPx * distanceY / distanceX;
-
-		// calculate vector
-
-		const angle  = Math.atan2(this.mouse.y, this.mouse.x);
-		const vector = { x: Math.cos(angle), y: Math.sin(angle) };
-
-		// move blob
-
-		blob.x.position += (blob.x.speedPx * Math.sign(vector.x) + blob.x.momentum) / world.gridBoxSize * Math.abs(vector.x);
-		blob.y.position += (blob.y.speedPx * Math.sign(vector.y) + blob.y.momentum) / world.gridBoxSize * Math.abs(vector.y);
-
-		// decrease momentum
-		// set to 0 if applicable in case momentum was a decimal
-
-		if (Math.abs(blob.x.momentum) >= 1)
-			blob.x.momentum = Math.sign(blob.x.momentum) * (Math.abs(blob.x.momentum) - 1);
-		else blob.x.momentum = 0;
-
-		if (Math.abs(blob.y.momentum) >= 1)
-			blob.y.momentum = Math.sign(blob.y.momentum) * (Math.abs(blob.y.momentum) - 1);
-		else blob.y.momentum = 0;
-
-		// disallow moving past world borders
-
-		if (blob.x.position <= 0)
-			blob.x.position = 0;
-		else if (blob.x.position >= world.width)
-			blob.x.position = world.width;
-
-		if (blob.y.position <= 0)
-			blob.y.position = 0;
-		else if (blob.y.position >= world.height)
-			blob.y.position = world.height;
-	}) }
+	tick(world) { this.cells.forEach(cell => cell.tick(world, this)) }
 
 	/**
 	 * @param {number} x
@@ -110,11 +64,11 @@ class Player {
 	 * @param {number} mass
 	 */
 	constructor(x, y, mass, colour) {
-		this.blobs.push(new Blob(x, y, 0, 0, mass));
+		this.cells.push(new Cell(x, y, 0, 0, mass));
 		this.colour = colour;
 	}
 
-	static MAX_BLOB_COUNT = 16;
+	static MAX_CELL_COUNT = 16;
 }
 
 module.exports = Player;
