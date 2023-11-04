@@ -48,8 +48,8 @@ class Player {
 			this.cells.push(new Cell(
 				cell.x,
 				cell.y,
-				cell.xVelocity > cell.yVelocity ? Cell.MOMENTUM : cell.xVelocity / cell.yVelocity * Cell.MOMENTUM,
-				cell.yVelocity > cell.xVelocity ? Cell.MOMENTUM : cell.yVelocity / cell.xVelocity * Cell.MOMENTUM,
+				Math.sign(cell.xVelocity) * (cell.xVelocity > cell.yVelocity ? Cell.MOMENTUM : Math.abs(cell.xVelocity / cell.yVelocity) * Cell.MOMENTUM),
+				Math.sign(cell.yVelocity) * (cell.yVelocity > cell.xVelocity ? Cell.MOMENTUM : Math.abs(cell.yVelocity / cell.xVelocity) * Cell.MOMENTUM),
 				cell.mass,
 			));
 		}

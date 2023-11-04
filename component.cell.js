@@ -49,9 +49,10 @@ class Cell {
 		const dh = Math.hypot(dx, dy);
 
 		// set velocity
+		// check if dh is 0 to prevent NaN
 
-		this.xVelocity = dh !== 0 ? dx / dh * speed * (player.mouse.x < this.x ? -1 : 1) : 0;
-		this.yVelocity = dh !== 0 ? dy / dh * speed * (player.mouse.y < this.y ? -1 : 1) : 0;
+		this.xVelocity = dh === 0 ? 0 : dx / dh * speed * (player.mouse.x < this.x ? -1 : 1);
+		this.yVelocity = dh === 0 ? 0 : dy / dh * speed * (player.mouse.y < this.y ? -1 : 1);
 
 		// prevent teleporation back and forth by moving the cell directly to the mouse
 		// if the distance between them is less than the velocity
@@ -70,29 +71,56 @@ class Cell {
 		this.y += this.yMomentum / world.gridboxDimension;
 
 		// collision detection
+		// ignore collision detection while splitting
 
-		if (this.xMomentum === 0 && this.yMomentum === 0) for (const cell of player.cells) {
-			if (this === cell) continue;
+		if (this.xMomentum === 0 && this.yMomentum === 0) player.cells.forEach(cell => {
+			// iterate through siblings
 
-			const difference = Math.hypot(
+			if (this === cell)
+				return;
+
+			// ignore cells currently in splitting motion
+
+			if (cell.xMomentum !== 0 || cell.yMomentum !== 0)
+				return;
+
+			const centerDist = Math.hypot(
 				Math.abs(this.x - cell.x),
-				Math.abs(this.y - cell.y)
+				Math.abs(this.y - cell.y),
 			);
 
-			if (difference > (this.radius + cell.radius) / world.gridboxDimension)
-				continue;
+			const minNonOverlapDist = (this.radius + cell.radius) / world.gridboxDimension;
 
-			const xLeftSideDifference  = Math.abs(this.x - (cell.x - cell.radius / world.gridboxDimension));
-			const xRightSideDifference = Math.abs(this.x - (cell.x + cell.radius / world.gridboxDimension));
-			const xVector = xLeftSideDifference < xRightSideDifference ? -1 : 1;
+			if (centerDist <= minNonOverlapDist) {
+				// calculate overlap
+				// includes closest direction to move this cell outside of other cell
 
-			const yTopSideDifference    = Math.abs(this.y - (cell.y - cell.radius / world.gridboxDimension));
-			const yBottomSideDifference = Math.abs(this.y - (cell.y + cell.radius / world.gridboxDimension));
-			const yVector = yTopSideDifference < yBottomSideDifference ? -1 : 1;
+				const overlapX = this.x - cell.x;
+				const overlapY = this.y - cell.y;
+				const overlapH = Math.hypot(overlapX, overlapY);
 
-			this.x += Math.abs(this.xVelocity) * xVector;
-			this.y += Math.abs(this.yVelocity) * yVector;
-		}
+				// calculate the correction vector to move the cell outside
+				// check if overlapH is 0 to prevent NaN
+
+				const correctionX = overlapH === 0 ? 2 * this.radius / world.gridboxDimension : (overlapX / overlapH) * (minNonOverlapDist - centerDist);
+				const correctionY = overlapH === 0 ? 2 * this.radius / world.gridboxDimension : (overlapY / overlapH) * (minNonOverlapDist - centerDist);
+
+				// push this cell outside of other cell gradually instead of teleporting directly out which correctionX/Y would do
+				// this should help when splitting and two pieces end up inside each other
+				// use correctionX/Y only to prevent jittering when velocityX/Y would move this cell more than directly outside of other cell
+
+				const absVelocityX = Math.abs(this.xVelocity);
+				const absVelocityY = Math.abs(this.yVelocity);
+
+				this.x += Math.abs(correctionX) > absVelocityX
+					? Math.sign(overlapX) * absVelocityX
+					: correctionX;
+
+				this.y += Math.abs(correctionY) > absVelocityY
+					? Math.sign(overlapY) * absVelocityY
+					: correctionY;
+			}
+		});
 
 		// decrease momentum
 
@@ -109,10 +137,12 @@ class Cell {
 
 		// prevent moving past world borders
 
-		if (this.x < 0) this.x = 0;
+		// TODO: check if setting momentum actually helps
+
+		if (this.x < 0) [this.x, this.xMomentum] = [0, 0];
 		else if (this.x > world.width) this.x = world.width;
 
-		if (this.y < 0) this.y = 0;
+		if (this.y < 0) [this.y, this.yMomentum] = [0, 0];
 		else if (this.y > world.height) this.y = world.height;
 	}
 
