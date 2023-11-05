@@ -5,10 +5,10 @@ const Player = require("./component.player.js");
 
 class Cell {
 	/** x position in gridboxes */
-	x = 0;
+	x;
 
 	/** y position in gridboxes */
-	y = 0;
+	y;
 
 	/** x velocity */
 	xVelocity = 0;
@@ -17,10 +17,10 @@ class Cell {
 	yVelocity = 0;
 
 	/** x momentum in px */
-	xMomentum = 0;
+	xMomentum;
 
 	/** y momentum in px */
-	yMomentum = 0;
+	yMomentum;
 
 	/** @type {number} */
 	mass;
@@ -40,7 +40,20 @@ class Cell {
 	 * @param {Player} player
 	 */
 	tick(world, player) {
-		const speed = 0.1;
+		// slow cell speed  on mouse however
+
+		const gridboxRadius = this.radius / world.gridboxDimension;
+		const mouseDistance = Math.max(Math.abs(player.mouse.x - this.x), Math.abs(player.mouse.y - this.y));
+
+		// - 0.1 in offset calculation makes innermost tenth of the radius result in a speed of zero
+		// this makes it easier to stop a cell completely
+
+		const offset = mouseDistance < gridboxRadius
+			? Math.max(mouseDistance * (1 / gridboxRadius) - 0.1, 0)
+			: 1;
+
+		/** gridboxes per tick */
+		const speed = (this.mass ** -0.45 * world.gridboxDimension) / (1000 / 25) * offset;
 
 		// set distance
 

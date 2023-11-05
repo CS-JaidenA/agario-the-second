@@ -13,13 +13,20 @@ const gridboxThickness = 1;
  * @typedef  {Object} Cell
  * @property {number} mass
  * @property {number} radius
- * @property {number} x The position in gridboxes.
- * @property {number} y The position in gridboxes.
+ * @property {number} x Measured in gridboxes.
+ * @property {number} y Measured in gridboxes.
+ */
+
+/**
+ * @typedef  {Object} Pellet
+ * @property {string} color
+ * @property {number} x Measured in gridboxes.
+ * @property {number} y Measured in gridboxes.
  */
 
 /**
  * @typedef  {Object} Player
- * @property {string} colour
+ * @property {string} color
  * @property {Cell[]} cells
  */
 
@@ -28,6 +35,7 @@ const gridboxThickness = 1;
  * @property {number}   width
  * @property {number}   height
  * @property {number}   gridboxDimension
+ * @property {Pellet[]} pellets
  * @property {Player[]} players
  */
 
@@ -119,12 +127,34 @@ function update() {
 		drawLine(new Coordinate(border.left, y), new Coordinate(border.right, y));
 	}
 
+	// pellets
+
+	// pellets are 1 mass so radius is 10px according to same server-side calculation used for cell radius
+	world.pellets.forEach(pellet => drawCirc(new Coordinate(
+		pellet.x * world.gridboxDimension + border.left,
+		pellet.y * world.gridboxDimension + border.top,
+	), 10, pellet.color));
+
 	// players
 
-	Object.values(world.players).forEach(player => player.cells.forEach(cell => drawCirc(new Coordinate(
-		cell.x * world.gridboxDimension + border.left,
-		cell.y * world.gridboxDimension + border.top,
-	), cell.radius, player.colour)));
+	Object.values(world.players).forEach(player => player.cells.forEach(cell => {
+		const borderWidth = cell.radius * 0.0275;
+		const borderColor = `rgb(${player.color.slice(4, -1).split(", ").map(value => value * 0.5).join(", ")})`;
+
+		// outer circle
+
+		drawCirc(new Coordinate(
+			cell.x * world.gridboxDimension + border.left,
+			cell.y * world.gridboxDimension + border.top,
+		), cell.radius, borderColor);
+
+		// inner circle
+
+		drawCirc(new Coordinate(
+			cell.x * world.gridboxDimension + border.left,
+			cell.y * world.gridboxDimension + border.top,
+		), cell.radius - borderWidth * 2, player.color)
+	}));
 
 	// mouse
 

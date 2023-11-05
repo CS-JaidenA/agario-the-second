@@ -66,8 +66,9 @@ setInterval(() => {
 	// then send to clients
 
 	const pack = JSON.stringify({ pack: world.pack() });
+
 	wss.clients.forEach(client => client.send(pack));
-}, 25); // 25
+}, 25);
 
 app.use(express.static("public"));
 server.listen(3000, () => console.log("\n[!] Listening on port 3000.\n"));

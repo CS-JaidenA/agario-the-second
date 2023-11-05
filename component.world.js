@@ -1,5 +1,6 @@
 'use strict';
 
+const Pellet = require("./component.pellet.js");
 const Player = require("./component.player.js");
 
 const DEFAULT_WORLD_SIZE    = 20; // 200 or 282?
@@ -44,7 +45,19 @@ class World extends WorldPackageExtended {
 	/** @type {number} */
 	pelletCount = DEFAULT_PELLET_COUNT;
 
-	tick() { Object.values(this.players).forEach(player => player.tick(this)) }
+	tick() {
+		Object.values(this.players).forEach(player => player.tick(this));
+
+		// respawn pellets
+
+		const pelletsEatenCount = this.pelletCount - this.pellets.length;
+
+		for (let i = 0; i < pelletsEatenCount; i++) this.pellets.push(new Pellet(
+			Math.random() * this.width,
+			Math.random() * this.height,
+			`rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
+		));
+	}
 
 	connect = uuid => { this.players[uuid] = new Player(
 		Math.random() * this.width,

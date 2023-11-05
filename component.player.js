@@ -4,6 +4,8 @@ const Cell  = require("./component.cell.js");
 const World = require("./component.world.js");
 
 class Player {
+	color;
+
 	/** @type {Cell[]} */
 	cells = [];
 
@@ -11,9 +13,6 @@ class Player {
 		x: 0,
 		y: 0,
 	};
-
-	/** @type {string} */
-	colour;
 
 	split() {
 		// loop through every cell in a random order and split them
@@ -62,10 +61,11 @@ class Player {
 	 * @param {number} x
 	 * @param {number} y
 	 * @param {number} mass
+	 * @param {string} color
 	 */
-	constructor(x, y, mass, colour) {
+	constructor(x, y, mass, color) {
 		this.cells.push(new Cell(x, y, 0, 0, mass));
-		this.colour = colour;
+		this.color = color;
 	}
 
 	static MAX_CELL_COUNT = 16;
