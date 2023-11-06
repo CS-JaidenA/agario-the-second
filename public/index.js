@@ -12,7 +12,8 @@ const gridboxThickness = 1;
 /**
  * @typedef  {Object} Cell
  * @property {number} mass
- * @property {number} radius
+ * @property {number} displayMass
+ * @property {number} displayRadius
  * @property {number} x Measured in gridboxes.
  * @property {number} y Measured in gridboxes.
  */
@@ -20,6 +21,7 @@ const gridboxThickness = 1;
 /**
  * @typedef  {Object} Pellet
  * @property {string} color
+ * @property {number} radius
  * @property {number} x Measured in gridboxes.
  * @property {number} y Measured in gridboxes.
  */
@@ -36,12 +38,12 @@ const gridboxThickness = 1;
  * @property {number}   height
  * @property {number}   gridboxDimension
  * @property {Pellet[]} pellets
- * @property {Player[]} players
+ * @property {Object.<string, Player>} players
  */
 
 /** @type {World} */
-let world = {};
-let uuid  = '';
+let world     = {};
+let mainuuid  = '';
 
 /**
  * @typedef  {Object} Mouse
@@ -72,14 +74,21 @@ class Coordinate {
 }
 
 function drawCirc(coord, radius, colour) {
+	const fillStyle = ctx.fillStyle;
+
 	ctx.beginPath();
 	ctx.arc(coord.x, coord.y, radius, 0, 2 * Math.PI);
 
 	ctx.fillStyle = colour;
 	ctx.fill();
+
+	ctx.fillStyle = fillStyle;
 };
 
 function drawLine(coord1, coord2) {
+	const strokeStyle = ctx.strokeStyle;
+	const lineWidth   = ctx.lineWidth;
+
 	ctx.beginPath();
 	ctx.moveTo(coord1.x, coord1.y);
 	ctx.lineTo(coord2.x, coord2.y);
@@ -87,6 +96,9 @@ function drawLine(coord1, coord2) {
 	ctx.strokeStyle = gridboxColour;
 	ctx.lineWidth   = gridboxThickness;
 	ctx.stroke();
+
+	ctx.strokeStyle = strokeStyle;
+	ctx.lineWidth   = lineWidth;
 };
 
 // draw canvas
@@ -129,32 +141,62 @@ function update() {
 
 	// pellets
 
-	// pellets are 1 mass so radius is 10px according to same server-side calculation used for cell radius
 	world.pellets.forEach(pellet => drawCirc(new Coordinate(
 		pellet.x * world.gridboxDimension + border.left,
 		pellet.y * world.gridboxDimension + border.top,
-	), 10, pellet.color));
+	), pellet.radius, pellet.color));
 
-	// players
+	// cells
 
-	Object.values(world.players).forEach(player => player.cells.forEach(cell => {
-		const borderWidth = cell.radius * 0.0275;
-		const borderColor = `rgb(${player.color.slice(4, -1).split(", ").map(value => value * 0.5).join(", ")})`;
+	ctx.fillStyle   = "white";
+	ctx.strokeStyle = "black";
+
+	// draw all cells in order from smallest to largest
+
+	/** @type {Cell[]} */
+	const allCells = [];
+
+	for (const uuid in world.players) {
+		const player = world.players[uuid];
+
+		player.cells.map(cell => [cell.uuid, cell.color] = [uuid, player.color])
+		allCells.push(...player.cells);
+	}
+
+	allCells.sort((cellA, cellB) => cellA.mass - cellB.mass).forEach(cell => {
+		const borderWidth = cell.displayRadius * 0.025;
+		const borderColor = `rgb(${cell.color.slice(4, -1).split(", ").map(value => value * 0.75).join(", ")})`;
+
+		const coordinate  = new Coordinate(
+			cell.x * world.gridboxDimension + border.left,
+			cell.y * world.gridboxDimension + border.top,
+		);
 
 		// outer circle
 
-		drawCirc(new Coordinate(
-			cell.x * world.gridboxDimension + border.left,
-			cell.y * world.gridboxDimension + border.top,
-		), cell.radius, borderColor);
+		drawCirc(coordinate, cell.displayRadius + borderWidth * 2, borderColor);
 
 		// inner circle
 
-		drawCirc(new Coordinate(
-			cell.x * world.gridboxDimension + border.left,
-			cell.y * world.gridboxDimension + border.top,
-		), cell.radius - borderWidth * 2, player.color)
-	}));
+		drawCirc(coordinate, cell.displayRadius, cell.color)
+
+		// mass
+
+		if (cell.uuid !== mainuuid)
+			return;
+
+		ctx.font      = `${20/50 * cell.displayRadius}px Ubuntu`;
+		ctx.lineWidth = 1/50 * cell.displayRadius;
+
+		const mass    = String(Math.round(cell.displayMass));
+		const metrics = ctx.measureText(mass);
+
+		const massX   = coordinate.x - ((metrics.actualBoundingBoxLeft   + metrics.actualBoundingBoxRight  ) / 2);
+		const massY   = coordinate.y + ((metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) / 2);
+
+		ctx.strokeText(mass, massX, massY);
+		ctx.fillText(mass, massX, massY);
+	});
 
 	// mouse
 
@@ -168,7 +210,7 @@ ws.addEventListener("message", e => {
 	const message = JSON.parse(e.data);
 
 	if (message.uuid)
-		uuid = message.uuid;
+		mainuuid = message.uuid;
 
 	if (message.pack) {
 		world = { ...world, ...message.pack };

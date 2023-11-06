@@ -49,13 +49,14 @@ class Player {
 				cell.y,
 				Math.sign(cell.xVelocity) * (cell.xVelocity > cell.yVelocity ? Cell.MOMENTUM : Math.abs(cell.xVelocity / cell.yVelocity) * Cell.MOMENTUM),
 				Math.sign(cell.yVelocity) * (cell.yVelocity > cell.xVelocity ? Cell.MOMENTUM : Math.abs(cell.yVelocity / cell.xVelocity) * Cell.MOMENTUM),
+				(5 + 7/300 * cell.mass) * 1000,
 				cell.mass,
 			));
 		}
 	}
 
 	/** @param {World} world */
-	tick(world) { this.cells.forEach(cell => cell.tick(world, this)) }
+	tick(interval, world) { this.cells.forEach(cell => cell.tick(interval, world, this)) }
 
 	/**
 	 * @param {number} x
@@ -64,7 +65,7 @@ class Player {
 	 * @param {string} color
 	 */
 	constructor(x, y, mass, color) {
-		this.cells.push(new Cell(x, y, 0, 0, mass));
+		this.cells.push(new Cell(x, y, 0, 0, undefined, mass));
 		this.color = color;
 	}
 

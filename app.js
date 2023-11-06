@@ -57,10 +57,12 @@ wss.on("connection", ws => {
 
 // game loop
 
+const interval = 25;
+
 setInterval(() => {
 	// tick world
 
-	world.tick();
+	world.tick(interval);
 
 	// package updated information
 	// then send to clients
@@ -68,7 +70,7 @@ setInterval(() => {
 	const pack = JSON.stringify({ pack: world.pack() });
 
 	wss.clients.forEach(client => client.send(pack));
-}, 25);
+}, interval);
 
 app.use(express.static("public"));
 server.listen(3000, () => console.log("\n[!] Listening on port 3000.\n"));

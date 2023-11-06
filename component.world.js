@@ -45,8 +45,8 @@ class World extends WorldPackageExtended {
 	/** @type {number} */
 	pelletCount = DEFAULT_PELLET_COUNT;
 
-	tick() {
-		Object.values(this.players).forEach(player => player.tick(this));
+	tick(interval) {
+		Object.values(this.players).forEach(player => player.tick(interval, this));
 
 		// respawn pellets
 
