@@ -6,6 +6,9 @@ const ws = new WebSocket(`${location.protocol === "http:" ? "ws" : "wss"}://${lo
 const cnv = document.getElementById("canvas");
 const ctx = cnv.getContext("2d");
 
+const leaderboard = document.getElementById("leaderboard");
+const score       = document.getElementById("score");
+
 const gridboxColour    = "#313131";
 const gridboxThickness = 1;
 
@@ -107,35 +110,32 @@ function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
 
 	const offset = world.gridboxDimension;
-
-	/**
-	 * @typedef  {Object} Border
-	 * @property {number} top
-	 * @property {number} left
-	 * @property {number} right
-	 * @property {number} bottom
-	 */
-
-	/** @type {Border} */
-	const border = {
-		top   : offset,
-		left  : offset,
+	const border = { top: offset, left: offset,
 		right : world.width  * (world.gridboxDimension + gridboxThickness) + offset,
 		bottom: world.height * (world.gridboxDimension + gridboxThickness) + offset,
 	};
 
-	// vertical gridlines
+	// gridlines
 
+	// vertical
 	for (let i = 0; i <= world.width; i++) {
 		const x = i * (world.gridboxDimension + gridboxThickness) + border.left;
+
+		// dont render if outside of viewport
+		if (x < 0 || x > cnv.width)
+			return;
 
 		drawLine(new Coordinate(x, border.top), new Coordinate(x, border.bottom));
 	}
 
-	// horizontal gridlines
-
+	// horizontal
 	for (let i = 0; i <= world.height; i++) {
 		const y = i * (world.gridboxDimension + gridboxThickness) + border.top;
+
+		// dont render if outside of viewport
+		if (y < 0 || y > cnv.height)
+			return;
+
 		drawLine(new Coordinate(border.left, y), new Coordinate(border.right, y));
 	}
 
@@ -144,59 +144,115 @@ function update() {
 	world.pellets.forEach(pellet => drawCirc(new Coordinate(
 		pellet.x * world.gridboxDimension + border.left,
 		pellet.y * world.gridboxDimension + border.top,
+		pellet.radius, pellet.color,
 	), pellet.radius, pellet.color));
 
 	// cells
 
-	ctx.fillStyle   = "white";
-	ctx.strokeStyle = "black";
+	// organize cells from smallest to largest
+	// to draw bigger cells over smaller cells
 
-	// draw all cells in order from smallest to largest
-
-	/** @type {Cell[]} */
-	const allCells = [];
+	const cells = [];
 
 	for (const uuid in world.players) {
 		const player = world.players[uuid];
 
-		player.cells.map(cell => [cell.uuid, cell.color] = [uuid, player.color])
-		allCells.push(...player.cells);
+		player.uuid = uuid;
+		player.name = uuid.substring(0, 8); // TODO: Remove this when players actually have their own names
+		player.cells.map(cell => cell.player = player);
+		cells.push(...player.cells);
 	}
 
-	allCells.sort((cellA, cellB) => cellA.mass - cellB.mass).forEach(cell => {
-		const borderWidth = cell.displayRadius * 0.025;
-		const borderColor = `rgb(${cell.color.slice(4, -1).split(", ").map(value => value * 0.75).join(", ")})`;
+	// keep track of scores for score and leaderboard
+
+	/** @type {Object} */
+	const scores = {};
+
+	ctx.strokeStyle = "black";
+	ctx.fillStyle   = "white";
+	ctx.lineWidth   = 3.5;
+
+	// sort by actual mass -- not animated mass
+	cells.sort((cellA, cellB) => cellA.mass - cellB.mass).forEach(cell => {
+		Object.hasOwn(scores, cell.player.uuid)
+			? scores[cell.player.uuid].score += cell.mass
+			: scores[cell.player.uuid] = { player: cell.player, score: cell.mass };
+
+		const borderWidth = cell.displayRadius * 0.025; // total border width
+		const borderColor = `rgb(${cell.player.color.slice(4, -1).split(", ").map(value => value * 0.6).join(", ")})`;
 
 		const coordinate  = new Coordinate(
 			cell.x * world.gridboxDimension + border.left,
 			cell.y * world.gridboxDimension + border.top,
 		);
 
-		// outer circle
+		// draw circles
 
-		drawCirc(coordinate, cell.displayRadius + borderWidth * 2, borderColor);
+		drawCirc(coordinate, cell.displayRadius + borderWidth, borderColor);
+		drawCirc(coordinate, cell.displayRadius, cell.player.color);
 
-		// inner circle
+		// draw name
 
-		drawCirc(coordinate, cell.displayRadius, cell.color)
+		ctx.font = "32px Ubuntu";
+		const nameWidth = ctx.measureText(cell.player.name).width;
+		ctx.font = `${Math.max(18, nameWidth < cell.displayRadius * 2 ? 32 : 32 * cell.displayRadius * 2 / nameWidth)}px Ubuntu`;
 
-		// mass
+		const nameMetrics = ctx.measureText(cell.player.name);
 
-		if (cell.uuid !== mainuuid)
-			return;
+		const nameX = coordinate.x - nameMetrics.width / 2;
+		const nameY = coordinate.y + (nameMetrics.fontBoundingBoxAscent + nameMetrics.fontBoundingBoxDescent) / 2 - (function() {
+			if (cell.player.uuid !== mainuuid)
+				return 0;
 
-		ctx.font      = `${20/50 * cell.displayRadius}px Ubuntu`;
-		ctx.lineWidth = 1/50 * cell.displayRadius;
+			const lineWidth = ctx.lineWidth;
+			const font      = ctx.font;
 
-		const mass    = String(Math.round(cell.displayMass));
-		const metrics = ctx.measureText(mass);
+			// mass
 
-		const massX   = coordinate.x - ((metrics.actualBoundingBoxLeft   + metrics.actualBoundingBoxRight  ) / 2);
-		const massY   = coordinate.y + ((metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) / 2);
+			const mass = String(Math.floor(cell.displayMass));
 
-		ctx.strokeText(mass, massX, massY);
-		ctx.fillText(mass, massX, massY);
+			ctx.lineWidth = 2;
+			ctx.font      = "18px Ubuntu";
+
+			const massMetrics = ctx.measureText(mass);
+			const massHeight  = massMetrics.fontBoundingBoxAscent - massMetrics.fontBoundingBoxDescent;
+			const nameHeight  = nameMetrics.fontBoundingBoxAscent - nameMetrics.fontBoundingBoxDescent;
+
+			const offset  = (nameHeight + massHeight) / 2;
+			const massX   = coordinate.x - massMetrics.width / 2;
+			const massY   = coordinate.y + (massMetrics.fontBoundingBoxAscent + massMetrics.fontBoundingBoxDescent) / 2 + offset;
+
+			ctx.strokeText(mass, massX, massY);
+			ctx.fillText(mass, massX, massY);
+
+			ctx.lineWidth = lineWidth;
+			ctx.font      = font;
+
+			return offset;
+		})();
+
+		ctx.strokeText(cell.player.name, nameX, nameY);
+		ctx.fillText(cell.player.name, nameX, nameY);
 	});
+
+	// score
+
+	score.innerHTML = Math.floor(scores[mainuuid].score);
+
+	// leaderboard
+
+	const topTenPlayers = Object.values(scores)
+		.sort((a, b) => b.score - a.score)
+		.slice(0, 10);
+
+	let innerHtml = '';
+
+	for (let i = 0; i < topTenPlayers.length; i++) {
+		const player = topTenPlayers[i].player;
+		innerHtml += `<div ${player.uuid === mainuuid ? 'class="highlight"' : ''}>${i + 1}. ${player.name}</div>\n`;
+	}
+
+	leaderboard.innerHTML = innerHtml;
 
 	// mouse
 

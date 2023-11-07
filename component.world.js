@@ -63,7 +63,7 @@ class World extends WorldPackageExtended {
 		Math.random() * this.width,
 		Math.random() * this.height,
 		DEFAULT_SPAWN_MASS,
-		`rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
+		`rgb(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)})`,
 	)};
 
 	disconnect = uuid => { delete this.players[uuid] };

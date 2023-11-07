@@ -49,10 +49,15 @@ class Player {
 				cell.y,
 				Math.sign(cell.xVelocity) * (cell.xVelocity > cell.yVelocity ? Cell.MOMENTUM : Math.abs(cell.xVelocity / cell.yVelocity) * Cell.MOMENTUM),
 				Math.sign(cell.yVelocity) * (cell.yVelocity > cell.xVelocity ? Cell.MOMENTUM : Math.abs(cell.yVelocity / cell.xVelocity) * Cell.MOMENTUM),
-				(5 + 7/300 * cell.mass) * 1000,
+				(30 + 7/300 * cell.mass) * 1000,
 				cell.mass,
 			));
 		}
+	}
+
+	virus() {
+		// as many 25 pieces as possible
+		// if not enough, give the original piece 2/3 the remaining mass and a random piece half
 	}
 
 	/** @param {World} world */
@@ -65,7 +70,7 @@ class Player {
 	 * @param {string} color
 	 */
 	constructor(x, y, mass, color) {
-		this.cells.push(new Cell(x, y, 0, 0, undefined, mass));
+		this.cells.push(new Cell(x, y, 0, 0, 0, mass));
 		this.color = color;
 	}
 

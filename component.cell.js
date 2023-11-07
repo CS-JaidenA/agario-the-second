@@ -39,11 +39,8 @@ class Cell {
 	/** @type {number} */
 	displayRadius;
 
-	/** @type {boolean} */
-	merging = false;
-
 	/** @type {number | undefined} */
-	mergeTimerMs;
+	mergeTimerMs = 0;
 
 	/** @param {number} mass */
 	updateMass(mass) {
@@ -77,35 +74,21 @@ class Cell {
 			this.updateDisplayMass(updatedDisplayMass < this.mass ? this.mass : updatedDisplayMass);
 		}
 
-		// begin merging if applicable
+		// update merge timer
 
-		let merging = false;
-
-		if (this.mergeTimerMs <= 0) {
-			merging = true;
-			this.merging = true;
-		}
-
-		// decrease merge timer if applicable
-
-		if (!merging && this.mergeTimerMs)
+		if (this.mergeTimerMs > 0) {
 			this.mergeTimerMs -= interval;
+
+			if (this.mergeTimerMs < 0)
+				this.mergeTimerMs = 0;
+		}
 
 		// find closest cell if merging
 
-		if (merging) {
-			let distance = Infinity;
-
+		if (this.mergeTimerMs === 0) {
 			player.cells.forEach(cell => {
 				if (cell === this) return;
-
-				const dist = Math.hypot(
-					this.x - cell.x,
-					this.y - cell.y,
-				);
-
-				if (dist >= distance)
-					return;
+				if (cell.mergeTimerMs > 0) return;
 
 				const centerDist = Math.hypot(
 					this.x - cell.x,
@@ -114,34 +97,23 @@ class Cell {
 
 				const nonOverlapDist = (this.radius + cell.radius) / world.gridboxDimension;
 
-				if (centerDist < nonOverlapDist) {
-					const bigger  = this.mass > cell.mass ? this : cell;
-					const smaller = bigger.uuid === this.uuid ? cell : this;
+				if (centerDist >= nonOverlapDist)
+					return;
 
-					// overlap percentage:
-					// the amount in gridboxes the smaller is being overlapped on...
-					// the diameter in gridboxes of the smaller
+				const bigger  = this.mass > cell.mass ? this : cell;
+				const smaller = bigger.uuid === this.uuid ? cell : this;
 
-					const overlapPercentage = (nonOverlapDist - centerDist) / (smaller.radius / world.gridboxDimension * 2);
+				// overlap percentage:
+				// the amount in gridboxes the smaller is being overlapped on...
+				// the diameter in gridboxes of the smaller
 
-					if (overlapPercentage >= 0.75) {
-						let mergeTimer;
+				const overlapPercentage = (nonOverlapDist - centerDist) / (smaller.radius / world.gridboxDimension * 2);
 
-						if (bigger.mergeTimerMs === undefined || smaller.mergeTimerMs === undefined)
-							mergeTimer === undefined;
-						else mergeTimer = bigger.mergeTimerMs > smaller.mergeTimerMs ? bigger.mergeTimerMs : smaller.mergeTimerMs;
+				if (overlapPercentage < 0.75)
+					return;
 
-						bigger.mergeTimerMs = mergeTimer;
-
-						bigger.updateMass(bigger.mass + smaller.mass);
-						player.cells.splice(player.cells.indexOf(smaller), 1);
-
-						if (this === smaller)
-							return;
-
-						this.merging = false;
-					}
-				}
+				bigger.updateMass(bigger.mass + smaller.mass);
+				player.cells.splice(player.cells.indexOf(smaller), 1);
 			});
 		}
 
@@ -191,13 +163,13 @@ class Cell {
 		// collision detection
 		// ignore collision detection while splitting
 
-		if (this.xMomentum === 0 && this.yMomentum === 0 && this.merging === false) player.cells.forEach(cell => {
+		if (this.xMomentum === 0 && this.yMomentum === 0) player.cells.forEach(cell => {
 			// iterate through siblings
 
 			if (cell === this)
 				return;
 
-			if (cell.merging)
+			if (cell.mergeTimerMs === 0 && this.mergeTimerMs === 0)
 				return;
 
 			// ignore cells currently in splitting motion
@@ -301,7 +273,7 @@ class Cell {
 	 * @param {number} y
 	 * @param {number} xMomentum
 	 * @param {number} yMomentum
-	 * @param {number | undefined} mergeTimerMs
+	 * @param {number} mergeTimerMs
 	 * @param {number} mass
 	 */
 	constructor(x, y, xMomentum, yMomentum, mergeTimerMs, mass) {
