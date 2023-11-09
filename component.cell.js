@@ -1,296 +1,284 @@
-'use strict';
+"use strict";
 
-const crypto = require("crypto");
+const MOMENTUM              = 1;
+const STOPPER_RADIUS_PX     = 10;
+const MOMENTUM_RESISTANCE   = 0.025;
 
-const World  = require("./component.world.js");
-const Player = require("./component.player.js");
+const MERGE_COOLDOWN_FACTOR = 7/300;
+const MIN_MERGE_COOLDOWN_MS = 5000; // TODO: Switch to 30000ms
+
+/**
+ * @typedef  {object} World
+ * @property {number} width
+ * @property {number} height
+ * @property {number} gridboxDimension
+ */
+
+/**
+ * @typedef  {object} Player
+ * @property {Cell[]} cells
+ * @property {object} mouse
+ * @property {number} mouse.xPosition
+ * @property {number} mouse.yPosition
+ * @property {World } world
+ */
 
 class Cell {
-	/** x position in gridboxes */
-	x;
+	player;
 
-	/** y position in gridboxes */
-	y;
+	#mass     = 0;
+	radius    = 0;
 
-	/** x velocity */
+	xPosition = 0;
+	yPosition = 0;
+
+	xMomentum = 0;
+	yMomentum = 0;
+
 	xVelocity = 0;
-
-	/** y velocity */
 	yVelocity = 0;
 
-	/** x momentum in px */
-	xMomentum;
+	mergeCooldown_ms = MIN_MERGE_COOLDOWN_MS + MERGE_COOLDOWN_FACTOR * this.mass;
 
-	/** y momentum in px */
-	yMomentum;
+	pack() { return {
+		mass:      this.mass,
+		radius:    this.radius,
+		xPosition: this.xPosition,
+		yPosition: this.yPosition,
+	} }
 
-	/** @type {number} */
-	mass;
+	/** @returns {Cell} the new cell */
+	split() {
+		this.mass /= 2;
 
-	/** @type {number} */
-	displayMass;
-
-	/** @type {string} */
-	uuid = crypto.randomUUID();
-
-	/** @type {number} */
-	radius;
-
-	/** @type {number} */
-	displayRadius;
-
-	/** @type {number | undefined} */
-	mergeTimerMs = 0;
-
-	/** @param {number} mass */
-	updateMass(mass) {
-		this.mass   = mass;
-		this.radius = Math.sqrt(mass * 100);
+		return new Cell(this.player, this.mass, this.xPosition, this.yPosition,
+			Math.sign(this.xVelocity) * MOMENTUM * (Math.abs(this.xVelocity) > Math.abs(this.yVelocity) ? 1 : Math.abs(this.xVelocity / this.yVelocity)),
+			Math.sign(this.yVelocity) * MOMENTUM * (Math.abs(this.yVelocity) > Math.abs(this.xVelocity) ? 1 : Math.abs(this.yVelocity / this.xVelocity)),
+		);
 	}
 
-	/** @param {number} displayMass */
-	updateDisplayMass(displayMass) {
-		this.displayMass   = displayMass;
-		this.displayRadius = Math.sqrt(displayMass * 100);
-	}
+	/** @param {number} interval*/
+	tick(interval) {
+		// mass decay
 
-	/**
-	 * @param {number} interval
-	 * @param {World } world
-	 * @param {Player} player
-	 */
-	tick(interval, world, player) {
-		// TODO: if the cell with the undefined merge timer is eaten, then switch whichever has the lowest mergeTimer to be undefined
+		this.mass *= 0.998**(interval / 1000);
 
-		// update display mass
+		// update merge cooldown
 
-		const displayMassUpdateRate = this.mass / 9;
+		if (this.mergeCooldown_ms > 0)
+			this.mergeCooldown_ms -= interval;
 
-		if (this.displayMass < this.mass) {
-			const updatedDisplayMass = this.displayMass + displayMassUpdateRate;
-			this.updateDisplayMass(updatedDisplayMass > this.mass ? this.mass : updatedDisplayMass);
-		} else {
-			const updatedDisplayMass = this.displayMass - displayMassUpdateRate;
-			this.updateDisplayMass(updatedDisplayMass < this.mass ? this.mass : updatedDisplayMass);
-		}
+		// calculate the slowing factor
+		// cells decrease in speed when hovered over by the mouse
 
-		// update merge timer
+		const mouseDistance = Math.max(
+			Math.abs(this.player.mouse.xPosition - this.xPosition),
+			Math.abs(this.player.mouse.yPosition - this.yPosition),
+		);
 
-		if (this.mergeTimerMs > 0) {
-			this.mergeTimerMs -= interval;
+		// mouseDistance / this.radius gives a value between 0-1 (our factor)
+		// zero being in the very center and one being on the very edge of the cell
 
-			if (this.mergeTimerMs < 0)
-				this.mergeTimerMs = 0;
-		}
+		// in order to make it easier to come to a complete stop,
+		// a stopping zone in the center is used
 
-		// find closest cell if merging
+		// if the mouse is inside the stopper radius then a negative value will be yielded
+		// instead make the factor zero using Math.max
 
-		if (this.mergeTimerMs === 0) {
-			player.cells.forEach(cell => {
-				if (cell === this) return;
-				if (cell.mergeTimerMs > 0) return;
-
-				const centerDist = Math.hypot(
-					this.x - cell.x,
-					this.y - cell.y,
-				);
-
-				const nonOverlapDist = (this.radius + cell.radius) / world.gridboxDimension;
-
-				if (centerDist >= nonOverlapDist)
-					return;
-
-				const bigger  = this.mass > cell.mass ? this : cell;
-				const smaller = bigger.uuid === this.uuid ? cell : this;
-
-				// overlap percentage:
-				// the amount in gridboxes the smaller is being overlapped on...
-				// the diameter in gridboxes of the smaller
-
-				const overlapPercentage = (nonOverlapDist - centerDist) / (smaller.radius / world.gridboxDimension * 2);
-
-				if (overlapPercentage < 0.75)
-					return;
-
-				bigger.updateMass(bigger.mass + smaller.mass);
-				player.cells.splice(player.cells.indexOf(smaller), 1);
-			});
-		}
-
-		// slow cell speed  on mouse however
-
-		const gridboxRadius = this.radius / world.gridboxDimension;
-		const mouseDistance = Math.max(Math.abs(player.mouse.x - this.x), Math.abs(player.mouse.y - this.y));
-
-		// - 0.1 in offset calculation makes innermost tenth of the radius result in a speed of zero
-		// this makes it easier to stop a cell completely
-
-		const offset = mouseDistance < gridboxRadius
-			? Math.max(mouseDistance * (1 / gridboxRadius) - 0.1, 0)
+		const stopperRadius = STOPPER_RADIUS_PX / this.player.world.gridboxDimension;
+		const slowingFactor = mouseDistance < this.radius
+			? Math.max((mouseDistance - stopperRadius) / (this.radius - stopperRadius), 0)
 			: 1;
 
-		/** gridboxes per tick */
-		const speed = (this.mass ** -0.45 * world.gridboxDimension) / (1000 / interval) * offset;
+		// calculate speed and update cell position accordingly
 
-		// set distance
+		const speed = 2.2 * this.mass**-0.439 * slowingFactor;
 
-		const dx = Math.abs(this.x - player.mouse.x);
-		const dy = Math.abs(this.y - player.mouse.y);
-		const dh = Math.hypot(dx, dy);
+		const xMouseDistance = Math.abs(this.xPosition - this.player.mouse.xPosition);
+		const yMouseDistance = Math.abs(this.yPosition - this.player.mouse.yPosition);
+		const hMouseDistance = Math.hypot(xMouseDistance, yMouseDistance);
 
-		// set velocity
-		// check if dh is 0 to prevent NaN
+		// prevent NaN from occuring by protecting against division by zero
 
-		this.xVelocity = dh === 0 ? 0 : dx / dh * speed * (player.mouse.x < this.x ? -1 : 1);
-		this.yVelocity = dh === 0 ? 0 : dy / dh * speed * (player.mouse.y < this.y ? -1 : 1);
+		[this.xVelocity, this.yVelocity] = hMouseDistance > 0 ? [
+			xMouseDistance / hMouseDistance * speed * (this.player.mouse.xPosition > this.xPosition ? 1 : -1),
+			yMouseDistance / hMouseDistance * speed * (this.player.mouse.yPosition > this.yPosition ? 1 : -1),
+		] : [0, 0];
 
-		// prevent teleporation back and forth by moving the cell directly to the mouse
-		// if the distance between them is less than the velocity
+		// prevent teleportation back and forth by moving the cell directly to
+		// the mouse if the distance between them is less than the velocity
 
-		Math.abs(this.x - player.mouse.x) < this.xVelocity
-			? this.x = player.mouse.x
-			: this.x += this.xVelocity;
+		xMouseDistance < this.xVelocity
+			? this.xPosition =  this.player.mouse.xPosition
+			: this.xPosition += this.xVelocity;
 
-		Math.abs(this.y - player.mouse.y) < this.yVelocity
-			? this.y = player.mouse.y
-			: this.y += this.yVelocity;
+		yMouseDistance < this.xVelocity
+			? this.yPosition =  this.player.mouse.yPosition
+			: this.yPosition += this.yVelocity;
 
-		// apply momentum from splitting
+		// apply and update momentum
 
-		this.x += this.xMomentum / world.gridboxDimension;
-		this.y += this.yMomentum / world.gridboxDimension;
+		this.xPosition += this.xMomentum;
+		this.yPosition += this.yMomentum;
+
+		const scalarXMomentum = Math.abs(this.xMomentum);
+		const scalarYMomentum = Math.abs(this.yMomentum);
+
+		if (scalarXMomentum > MOMENTUM_RESISTANCE)
+			this.xMomentum  = Math.sign(this.xMomentum) * (scalarXMomentum - MOMENTUM_RESISTANCE);
+		else this.xMomentum = 0;
+
+		if (scalarYMomentum > MOMENTUM_RESISTANCE)
+			this.yMomentum  = Math.sign(this.yMomentum) * (scalarYMomentum - MOMENTUM_RESISTANCE);
+		else this.yMomentum = 0;
 
 		// collision detection
-		// ignore collision detection while splitting
+		// ignore collisions while splitting
 
-		if (this.xMomentum === 0 && this.yMomentum === 0) player.cells.forEach(cell => {
-			// iterate through siblings
-
+		if (this.xMomentum === 0 && this.yMomentum === 0) this.player.cells.forEach(cell => {
 			if (cell === this)
 				return;
 
-			if (cell.mergeTimerMs === 0 && this.mergeTimerMs === 0)
-				return;
-
-			// ignore cells currently in splitting motion
+			// return if cell is in a splitting motion
 
 			if (cell.xMomentum !== 0 || cell.yMomentum !== 0)
 				return;
 
-			// ignore merging partners
+			// check if merging conditions are met if both are in a mergeable state
 
-			const centerDist = Math.hypot(
-				this.x - cell.x,
-				this.y - cell.y,
+			if (cell.mergeCooldown_ms <= 0 && this.mergeCooldown_ms <= 0) {
+				const distance = Math.hypot(
+					this.xPosition - cell.xPosition,
+					this.yPosition - cell.yPosition,
+				);
+
+				const overlapDistance = this.radius + cell.radius;
+
+				if (distance >= overlapDistance)
+					return;
+
+				const bigger  = this.mass > cell.mass ? this : cell;
+				const smaller = this.mass > cell.mass ? cell : this;
+
+				// overlap percentage:
+				// the amount the smaller is being overlapped divided by
+				// the diameter of the smaller
+
+				const overlapPercentage = (overlapDistance - distance) / smaller.diameter;
+
+				if (overlapPercentage <= 0.75)
+					return;
+
+				bigger.mass += smaller.mass;
+				this.player.cells.splice(this.player.cells.indexOf(smaller), 1);
+
+				return;
+			}
+
+			const distance = Math.hypot(
+				this.xPosition - cell.xPosition,
+				this.yPosition - cell.yPosition,
 			);
 
-			const nonOverlapDist = (this.radius + cell.radius) / world.gridboxDimension;
+			const overlapDistance = this.radius + cell.radius;
 
-			if (centerDist >= nonOverlapDist)
+			if (distance >= overlapDistance)
 				return;
 
 			// calculate overlap
 			// includes closest direction to move this cell outside of other cell
 
-			const overlapX = this.x - cell.x;
-			const overlapY = this.y - cell.y;
-			const overlapH = Math.hypot(overlapX, overlapY);
+			const xOverlap      = this.xPosition - cell.xPosition;
+			const yOverlap      = this.yPosition - cell.yPosition;
+			const overlapVector = Math.hypot(xOverlap, yOverlap);
+			const overlapAmount = overlapDistance - distance;
 
-			// calculate the correction vector to move the cell outside
-			// check if overlapH is 0 to prevent NaN
+			// calculate how far the position needs to change to move the cell outside the other cell
+			// prevent NaN from occuring by protecting against division by zero
 
-			const correctionX = overlapH === 0 ? 2 * this.radius / world.gridboxDimension : (overlapX / overlapH) * (nonOverlapDist - centerDist);
-			const correctionY = overlapH === 0 ? 2 * this.radius / world.gridboxDimension : (overlapY / overlapH) * (nonOverlapDist - centerDist);
+			const [xCorrection, yCorrection] = overlapVector > 0 ? [
+				xOverlap / overlapVector * overlapAmount,
+				yOverlap / overlapVector * overlapAmount,
+			] : [this.diameter, this.diameter];
 
-			// push this cell outside of other cell gradually instead of teleporting directly out which correctionX/Y would do
-			// this should help when splitting and two pieces end up inside each other
-			// use correctionX/Y only to prevent jittering when velocityX/Y would move this cell more than directly outside of other cell
-
-			const absVelocityX = Math.abs(this.xVelocity);
-			const absVelocityY = Math.abs(this.yVelocity);
-
-			this.x += Math.abs(correctionX) > absVelocityX
-				? Math.sign(overlapX) * absVelocityX
-				: correctionX;
-
-			this.y += Math.abs(correctionY) > absVelocityY
-				? Math.sign(overlapY) * absVelocityY
-				: correctionY;
+			this.xPosition += xCorrection;
+			this.yPosition += yCorrection;
 		});
 
-		// decrease momentum
+		// handle collisions with the world border
 
-		const absXMomentum = Math.abs(this.xMomentum);
-		const absYMomentum = Math.abs(this.yMomentum);
+		if (this.xPosition < 0)
+			[this.xPosition, this.xMomentum] = [0, Math.abs(this.xMomentum)];
+		else if (this.xPosition > this.player.world.width)
+			[this.xPosition, this.xMomentum] = [this.player.world.width, -Math.abs(this.xMomentum)];
 
-		if (absXMomentum >= Cell.RESISTANCE)
-			this.xMomentum = Math.sign(this.xMomentum) * (absXMomentum - 1);
-		else this.xMomentum = 0;
+		if (this.yPosition < 0)
+			[this.yPosition, this.yMomentum] = [0, Math.abs(this.yMomentum)];
+		else if (this.yPosition > this.player.world.height)
+			[this.yPosition, this.yMomentum] = [this.player.world.height, -Math.abs(this.yMomentum)];
 
-		if (absYMomentum >= Cell.RESISTANCE)
-			this.yMomentum = Math.sign(this.yMomentum) * (absYMomentum - 1);
-		else this.yMomentum = 0;
+		// TODO: Replace with better collision detection system
+		// check for pellet collision (TEMPORARILY HERE)
 
-		// prevent moving past world borders
+		for (let i = 0; i < this.player.world.pellets.length; i++) {
+			const pellet = this.player.world.pellets[i];
 
-		if (this.x < 0) [this.x, this.xMomentum] = [0, 0];
-		else if (this.x > world.width) this.x = world.width;
-
-		if (this.y < 0) [this.y, this.yMomentum] = [0, 0];
-		else if (this.y > world.height) this.y = world.height;
-
-		// check for pellet collision
-
-		for (let i = 0; i < world.pellets.length; i++) {
-			const pellet = world.pellets[i];
-
-			const centerDist = Math.hypot(
-				this.x - pellet.x,
-				this.y - pellet.y,
+			const distance = Math.hypot(
+				this.xPosition - pellet.xPosition,
+				this.yPosition - pellet.yPosition,
 			);
 
-			const nonOverlapDist = (this.radius + pellet.radius) / world.gridboxDimension;
+			const overlapDistance = this.radius + pellet.radius;
 
-			if (centerDist >= nonOverlapDist)
+			if (distance >= overlapDistance)
 				continue;
 
 			// overlap percentage:
 			// the amount in gridboxes the pellet is being overlapped on...
 			// the diameter in gridboxes of the pellet
 
-			const overlapPercentage = (nonOverlapDist - centerDist) / (pellet.radius / world.gridboxDimension * 2);
+			const overlapPercentage = (overlapDistance - distance) / pellet.diameter;
 
 			if (overlapPercentage >= 0.75) {
-				this.updateMass(this.mass + pellet.mass);
-				world.pellets.splice(i, 1);
+				this.mass += pellet.mass;
+				this.player.world.pellets.splice(i, 1);
 				i--;
 			}
 		}
 	}
 
 	/**
-	 * @param {number} x
-	 * @param {number} y
+	 * @param {Player} player
+	 * @param {number} mass
+	 * @param {number} xPosition
+	 * @param {number} yPosition
 	 * @param {number} xMomentum
 	 * @param {number} yMomentum
-	 * @param {number} mergeTimerMs
-	 * @param {number} mass
 	 */
-	constructor(x, y, xMomentum, yMomentum, mergeTimerMs, mass) {
-		this.x = x;
-		this.y = y;
+	constructor(player, mass, xPosition, yPosition, xMomentum, yMomentum) {
+		this.player    = player;
+		this.mass      = mass;
 
-		this.xMomentum  = xMomentum;
-		this.yMomentum  = yMomentum;
-		this.mergeTimerMs = mergeTimerMs;
+		this.xPosition = xPosition;
+		this.yPosition = yPosition;
 
-		this.updateMass(mass);
-		this.updateDisplayMass(mass);
+		this.xMomentum = xMomentum;
+		this.yMomentum = yMomentum;
 	}
 
-	static MOMENTUM      = 30;
-	static RESISTANCE    = 1;
-	static MIN_CELL_SIZE = 20;
+	get mass() {
+		return this.#mass;
+	}
+
+	get diameter() {
+		return this.radius * 2;
+	}
+
+	/** @param {number} mass */
+	set mass(mass) {
+		this.#mass  = mass;
+		this.radius = Math.sqrt(mass * 100) / this.player.world.gridboxDimension;
+	}
 }
 
 module.exports = Cell;

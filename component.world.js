@@ -15,11 +15,22 @@ class WorldPackage {
 	/** @type {Object<string, Player>} */
 	players = {};
 
-	/** @returns {WorldPackage} */
-	pack = () => ({
-		pellets: this.pellets,
-		players: this.players,
-	});
+	pack() {
+		const packedPlayers = {};
+
+		for (const uuid in this.players)
+			packedPlayers[uuid] = this.players[uuid].pack();
+
+		const packedPellets = [];
+
+		for (const pellet of this.pellets)
+			packedPellets.push(pellet.pack());
+
+		return {
+			pellets: packedPellets,
+			players: packedPlayers,
+		};
+	}
 }
 
 class WorldPackageExtended extends WorldPackage {
@@ -53,6 +64,7 @@ class World extends WorldPackageExtended {
 		const pelletsEatenCount = this.pelletCount - this.pellets.length;
 
 		for (let i = 0; i < pelletsEatenCount; i++) this.pellets.push(new Pellet(
+			this,
 			Math.random() * this.width,
 			Math.random() * this.height,
 			`rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
@@ -60,9 +72,11 @@ class World extends WorldPackageExtended {
 	}
 
 	connect = uuid => { this.players[uuid] = new Player(
+		this,
+		uuid.substring(0, 8),
+		DEFAULT_SPAWN_MASS,
 		Math.random() * this.width,
 		Math.random() * this.height,
-		DEFAULT_SPAWN_MASS,
 		`rgb(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)})`,
 	)};
 

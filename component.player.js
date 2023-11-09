@@ -1,80 +1,84 @@
-'use strict';
+"use strict";
 
-const Cell  = require("./component.cell.js");
-const World = require("./component.world.js");
+const Cell = require("./component.cell.js");
+
+const MIN_CELL_MASS  = 17.5;
+const MAX_CELL_COUNT = 16;
 
 class Player {
+	world;
+
+	name;
 	color;
 
 	/** @type {Cell[]} */
 	cells = [];
 
+
 	mouse = {
-		x: 0,
-		y: 0,
+		xPosition: 0,
+		yPosition: 0,
 	};
+
+	pack() { return {
+		name:  this.name,
+		color: this.color,
+		cells: this.cells.map(cell => cell.pack()),
+	} }
 
 	split() {
 		// loop through every cell in a random order and split them
-		// stop once all of the cells you started with have been split,
-		// or you reach the max cell count. Whichever comes first.
+		// stop once all of them have been split or you reach the max cell count
 
 		const startingCellCount       = this.cells.length;
-		const unsplittedStartingCells = this.cells.slice(0, startingCellCount);
+		const unsplittedStartingCells = this.cells.slice(); // copy of the array
 
 		for (let i = 0; i < startingCellCount; i++) {
 			// break if there are too many cells
 
-			if (this.cells.length >= Player.MAX_CELL_COUNT)
+			if (this.cells.length >= MAX_CELL_COUNT)
 				break;
 
-			// select random cell
+			// selection of a random cell
 
 			const index = Math.floor(Math.random() * unsplittedStartingCells.length);
 			const cell  = unsplittedStartingCells[index];
 
-			// remove cell from unsplitted
+			// remove the cell from the array so it can't be selected again next time
 
 			unsplittedStartingCells.splice(index, 1);
 
-			// split cell if able
+			// split the cell if able.
 
-			if (cell.mass / 2 < Cell.MIN_CELL_SIZE)
+			if (cell.mass / 2 < MIN_CELL_MASS)
 				continue;
 
-			cell.updateMass(cell.mass / 2);
-
-			this.cells.push(new Cell(
-				cell.x,
-				cell.y,
-				Math.sign(cell.xVelocity) * (cell.xVelocity > cell.yVelocity ? Cell.MOMENTUM : Math.abs(cell.xVelocity / cell.yVelocity) * Cell.MOMENTUM),
-				Math.sign(cell.yVelocity) * (cell.yVelocity > cell.xVelocity ? Cell.MOMENTUM : Math.abs(cell.yVelocity / cell.xVelocity) * Cell.MOMENTUM),
-				(30 + 7/300 * cell.mass) * 1000,
-				cell.mass,
-			));
+			this.cells.push(cell.split());
 		}
 	}
 
-	virus() {
-		// as many 25 pieces as possible
-		// if not enough, give the original piece 2/3 the remaining mass and a random piece half
-	}
-
-	/** @param {World} world */
-	tick(interval, world) { this.cells.forEach(cell => cell.tick(interval, world, this)) }
+	/**
+	 * @param {number} interval
+	 * @param {World}  world
+	 */
+	tick(interval, world) { this.cells.forEach(cell => cell.tick(interval, this, world)) }
 
 	/**
-	 * @param {number} x
-	 * @param {number} y
+	 * @param {World } world
+	 * @param {string} name
 	 * @param {number} mass
+	 * @param {number} xPosition
+	 * @param {number} yPosition
 	 * @param {string} color
 	 */
-	constructor(x, y, mass, color) {
-		this.cells.push(new Cell(x, y, 0, 0, 0, mass));
+	constructor(world, name, mass, xPosition, yPosition, color) {
+		this.world = world;
+		this.name  = name;
+
+		this.cells.push(new Cell(this, mass, xPosition, yPosition, 0, 0));
+
 		this.color = color;
 	}
-
-	static MAX_CELL_COUNT = 16;
 }
 
 module.exports = Player;

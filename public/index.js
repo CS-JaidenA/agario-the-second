@@ -15,22 +15,22 @@ const gridboxThickness = 1;
 /**
  * @typedef  {Object} Cell
  * @property {number} mass
- * @property {number} displayMass
- * @property {number} displayRadius
- * @property {number} x Measured in gridboxes.
- * @property {number} y Measured in gridboxes.
+ * @property {number} radius
+ * @property {number} xPosition
+ * @property {number} yPosition
  */
 
 /**
  * @typedef  {Object} Pellet
  * @property {string} color
  * @property {number} radius
- * @property {number} x Measured in gridboxes.
- * @property {number} y Measured in gridboxes.
+ * @property {number} xPosition
+ * @property {number} yPosition
  */
 
 /**
  * @typedef  {Object} Player
+ * @property {string} name
  * @property {string} color
  * @property {Cell[]} cells
  */
@@ -142,10 +142,10 @@ function update() {
 	// pellets
 
 	world.pellets.forEach(pellet => drawCirc(new Coordinate(
-		pellet.x * world.gridboxDimension + border.left,
-		pellet.y * world.gridboxDimension + border.top,
+		pellet.xPosition * world.gridboxDimension + border.left,
+		pellet.yPosition * world.gridboxDimension + border.top,
 		pellet.radius, pellet.color,
-	), pellet.radius, pellet.color));
+	), pellet.radius * world.gridboxDimension, pellet.color));
 
 	// cells
 
@@ -158,7 +158,6 @@ function update() {
 		const player = world.players[uuid];
 
 		player.uuid = uuid;
-		player.name = uuid.substring(0, 8); // TODO: Remove this when players actually have their own names
 		player.cells.map(cell => cell.player = player);
 		cells.push(...player.cells);
 	}
@@ -178,24 +177,26 @@ function update() {
 			? scores[cell.player.uuid].score += cell.mass
 			: scores[cell.player.uuid] = { player: cell.player, score: cell.mass };
 
-		const borderWidth = cell.displayRadius * 0.025; // total border width
+		const borderWidth = 5; // total border width
 		const borderColor = `rgb(${cell.player.color.slice(4, -1).split(", ").map(value => value * 0.6).join(", ")})`;
 
 		const coordinate  = new Coordinate(
-			cell.x * world.gridboxDimension + border.left,
-			cell.y * world.gridboxDimension + border.top,
+			cell.xPosition * world.gridboxDimension + border.left,
+			cell.yPosition * world.gridboxDimension + border.top,
 		);
 
 		// draw circles
 
-		drawCirc(coordinate, cell.displayRadius + borderWidth, borderColor);
-		drawCirc(coordinate, cell.displayRadius, cell.player.color);
+		const radius_px = cell.radius * world.gridboxDimension;
+
+		drawCirc(coordinate, radius_px + borderWidth, borderColor);
+		drawCirc(coordinate, radius_px, cell.player.color);
 
 		// draw name
 
 		ctx.font = "32px Ubuntu";
 		const nameWidth = ctx.measureText(cell.player.name).width;
-		ctx.font = `${Math.max(18, nameWidth < cell.displayRadius * 2 ? 32 : 32 * cell.displayRadius * 2 / nameWidth)}px Ubuntu`;
+		ctx.font = `${Math.max(18, nameWidth < radius_px * 2 ? 32 : 32 * radius_px * 2 / nameWidth)}px Ubuntu`;
 
 		const nameMetrics = ctx.measureText(cell.player.name);
 
@@ -209,7 +210,7 @@ function update() {
 
 			// mass
 
-			const mass = String(Math.floor(cell.displayMass));
+			const mass = String(Math.floor(cell.mass));
 
 			ctx.lineWidth = 2;
 			ctx.font      = "18px Ubuntu";
@@ -257,8 +258,8 @@ function update() {
 	// mouse
 
 	ws.send(JSON.stringify({ type: "mouse", load: {
-		x: (mouse.x_px - border.left) / world.gridboxDimension,
-		y: (mouse.y_px - border.top ) / world.gridboxDimension,
+		xPosition: (mouse.x_px - border.left) / world.gridboxDimension,
+		yPosition: (mouse.y_px - border.top ) / world.gridboxDimension,
 	}}));
 }
 
