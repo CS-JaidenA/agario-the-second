@@ -4,6 +4,11 @@ const DEFAULT_MASS = 1;
 const MAX = DEFAULT_MASS + VARIATION;
 const MIN = DEFAULT_MASS - VARIATION;
 
+/**
+ * @typedef  {object} World
+ * @property {number} gridboxDimension
+ */
+
 class Pellet {
 	world;
 
@@ -23,6 +28,7 @@ class Pellet {
 	} }
 
 	/**
+	 * @param {World}  world
 	 * @param {number} xPosition
 	 * @param {number} yPosition
 	 * @param {string} color

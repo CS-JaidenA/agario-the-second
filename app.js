@@ -48,6 +48,9 @@ wss.on("connection", ws => {
 
 		if (message.type === "split")
 			return world.players[uuid].split();
+
+		if (message.type === "eject")
+			return world.players[uuid].eject();
 	});
 
 	// disconnect from client on close

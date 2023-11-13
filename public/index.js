@@ -13,8 +13,16 @@ const gridboxColour    = "#313131";
 const gridboxThickness = 1;
 
 /**
- * @typedef  {Object} Cell
+ * @typedef  {object} CellPackage
  * @property {number} mass
+ * @property {number} radius
+ * @property {number} xPosition
+ * @property {number} yPosition
+ */
+
+/**
+ * @typedef  {object} MassPackage
+ * @property {number} color
  * @property {number} radius
  * @property {number} xPosition
  * @property {number} yPosition
@@ -32,11 +40,12 @@ const gridboxThickness = 1;
  * @typedef  {Object} Player
  * @property {string} name
  * @property {string} color
- * @property {Cell[]} cells
+ * @property {CellPackage[]} cells
  */
 
 /**
  * @typedef  {Object}   World
+ * @property {MassPackage[]} mass
  * @property {number}   width
  * @property {number}   height
  * @property {number}   gridboxDimension
@@ -144,8 +153,26 @@ function update() {
 	world.pellets.forEach(pellet => drawCirc(new Coordinate(
 		pellet.xPosition * world.gridboxDimension + border.left,
 		pellet.yPosition * world.gridboxDimension + border.top,
-		pellet.radius, pellet.color,
 	), pellet.radius * world.gridboxDimension, pellet.color));
+
+	// mass
+
+	world.mass.forEach(mass => {
+		const radius_px = mass.radius * world.gridboxDimension;
+
+		const borderWidth = radius_px * 0.2; // total border width
+		const borderColor = `rgb(${mass.color.slice(4, -1).split(", ").map(value => value * 0.6).join(", ")})`;
+
+		const coordinate  = new Coordinate(
+			mass.xPosition * world.gridboxDimension + border.left,
+			mass.yPosition * world.gridboxDimension + border.top,
+		);
+
+		// draw circles
+
+		drawCirc(coordinate, radius_px, borderColor);
+		drawCirc(coordinate, radius_px - borderWidth, mass.color);
+	});
 
 	// cells
 
@@ -282,17 +309,25 @@ window.addEventListener("resize", () => {
 
 window.dispatchEvent(new Event("resize"));
 
+let wPressed     = false;
 let spacePressed = false;
 
 window.addEventListener("keyup", event => {
-	if (event.code === "Space") spacePressed = false;
+	if (event.code === "KeyW") wPressed = false;
+	else if (event.code === "Space") spacePressed = false;
 });
 
 window.addEventListener("keydown", event => {
-	if (spacePressed || event.code !== "Space") return;
-	spacePressed = true;
+	if (event.code === "KeyW") {
+		if (wPressed) return;
 
-	// split
+		wPressed = true;
+		ws.send(JSON.stringify({ type: "eject" }));
+	}
+	else if (event.code === "Space") {
+		if (spacePressed) return;
 
-	ws.send(JSON.stringify({ type: "split" }));
+		spacePressed = true;
+		ws.send(JSON.stringify({ type: "split" }));
+	}
 });

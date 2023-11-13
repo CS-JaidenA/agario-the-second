@@ -6,7 +6,7 @@ const MIN_CELL_MASS  = 17.5;
 const MAX_CELL_COUNT = 16;
 
 class Player {
-	world;
+	parent;
 
 	name;
 	color;
@@ -59,9 +59,12 @@ class Player {
 
 	/**
 	 * @param {number} interval
-	 * @param {World}  world
 	 */
-	tick(interval, world) { this.cells.forEach(cell => cell.tick(interval, this, world)) }
+	tick(interval) { this.cells.forEach(cell => cell.tick(interval)) }
+
+	eject() {
+		this.cells.forEach(cell => cell.eject());
+	}
 
 	/**
 	 * @param {World } world
@@ -72,10 +75,10 @@ class Player {
 	 * @param {string} color
 	 */
 	constructor(world, name, mass, xPosition, yPosition, color) {
-		this.world = world;
+		this.parent = world;
 		this.name  = name;
 
-		this.cells.push(new Cell(this, mass, xPosition, yPosition, 0, 0));
+		this.cells.push(new Cell(mass, 0, 0, xPosition, yPosition, this));
 
 		this.color = color;
 	}

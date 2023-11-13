@@ -1,5 +1,6 @@
 'use strict';
 
+const Mass   = require("./component.mass.js");
 const Pellet = require("./component.pellet.js");
 const Player = require("./component.player.js");
 
@@ -9,6 +10,9 @@ const DEFAULT_PELLET_COUNT  = 100;
 const DEFAULT_GRIDBOX_SIZE  = 40;
 
 class WorldPackage {
+	/** @type {Mass[]} */
+	mass = [];
+
 	/** @type {Pellet[]} */
 	pellets = [];
 
@@ -16,6 +20,11 @@ class WorldPackage {
 	players = {};
 
 	pack() {
+		const packedMass = [];
+
+		for (const mass of this.mass)
+			packedMass.push(mass.pack());
+
 		const packedPlayers = {};
 
 		for (const uuid in this.players)
@@ -27,6 +36,7 @@ class WorldPackage {
 			packedPellets.push(pellet.pack());
 
 		return {
+			mass: packedMass,
 			pellets: packedPellets,
 			players: packedPlayers,
 		};
@@ -57,7 +67,8 @@ class World extends WorldPackageExtended {
 	pelletCount = DEFAULT_PELLET_COUNT;
 
 	tick(interval) {
-		Object.values(this.players).forEach(player => player.tick(interval, this));
+		Object.values(this.mass).forEach(mass => mass.tick(interval));
+		Object.values(this.players).forEach(player => player.tick(interval));
 
 		// respawn pellets
 
