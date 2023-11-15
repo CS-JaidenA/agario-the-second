@@ -9,9 +9,6 @@
 
 class Virus {
 	/** @type {number} */
-	mass;
-
-	/** @type {number} */
 	radius;
 
 	/** @type {number} */
@@ -28,6 +25,9 @@ class Virus {
 
 	/** @type {World} */
 	parent;
+
+	/** @type {number} */
+	#mass;
 
 	/** @returns {VirusPackage} */
 	pack = () => ({
@@ -135,8 +135,18 @@ class Virus {
 		this.yPosition = yPosition;
 	}
 
+	get mass() {
+		return this.#mass;
+	}
+
 	get diameter() {
 		return this.radius * 2;
+	}
+
+	/** @param {number} mass */
+	set mass(mass) {
+		this.#mass  = mass;
+		this.radius = Math.sqrt(mass * 100) / this.parent.gridboxDimension;
 	}
 
 	/** @type {number} */

@@ -128,12 +128,12 @@ class Cell {
 
 		// apply momentum
 
-		console.log("c", this.xPosition, this.xMomentum);
+		// console.log("c", this.xPosition, this.xMomentum);
 
 		this.xPosition += this.xMomentum;
 		this.yPosition += this.yMomentum;
 
-		console.log("d", this.xPosition, this.xMomentum, this.parent.mouse.xPosition, this.xVelocity, xMouseDistance);
+		// console.log("d", this.xPosition, this.xMomentum, this.parent.mouse.xPosition, this.xVelocity, xMouseDistance);
 
 		if (isNaN(this.xPosition))
 			process.exit(1);
@@ -143,13 +143,13 @@ class Cell {
 		const scalarXMomentum = Math.abs(this.xMomentum);
 		const scalarYMomentum = Math.abs(this.yMomentum);
 
-		console.log("a", this.xMomentum, scalarXMomentum, Cell.resistance);
+		// console.log("a", this.xMomentum, scalarXMomentum, Cell.resistance);
 
 		if (scalarXMomentum > Cell.resistance)
 			this.xMomentum  = Math.sign(this.xMomentum) * (scalarXMomentum - Cell.resistance);
 		else this.xMomentum = 0;
 
-		console.log("b", this.xMomentum);
+		// console.log("b", this.xMomentum);
 
 		if (scalarYMomentum > Cell.resistance)
 			this.yMomentum  = Math.sign(this.yMomentum) * (scalarYMomentum - Cell.resistance);

@@ -63,6 +63,7 @@ const gridboxThickness = 1;
 
 /** @type {World} */
 let world     = {};
+let running   = false;
 let mainuuid  = '';
 let gridboxDimension = 0;
 /**
@@ -165,7 +166,7 @@ function update() {
 		};
 	})();
 
-	const newViewportSize = 60 + Math.max(bounds.right - bounds.left, bounds.bottom - bounds.top);
+	const newViewportSize = 40 + Math.max(bounds.right - bounds.left, bounds.bottom - bounds.top);
 
 	// smooth viewport size change
 
@@ -384,8 +385,10 @@ function update() {
 
 		// draw circles
 
-		drawCirc(coordinate, radius_px, "rgb(31, 153, 31)"); // outside
-		drawCirc(coordinate, radius_px - borderWidth, "#33FF33"); // inside
+		const img = new Image();
+		img.src = "./virus.svg";
+
+		ctx.drawImage(img, coordinate.x - radius_px, coordinate.y - radius_px, radius_px * 2, radius_px * 2);
 	});
 
 	// score
@@ -413,6 +416,10 @@ function update() {
 		xPosition: (mouse.x_px - border.left) / gridboxDimension,
 		yPosition: (mouse.y_px - border.top ) / gridboxDimension,
 	}}));
+
+	// loop
+
+	requestAnimationFrame(update);
 }
 
 ws.addEventListener("message", e => {
@@ -423,7 +430,11 @@ ws.addEventListener("message", e => {
 
 	if (message.pack) {
 		world = { ...world, ...message.pack };
-		requestAnimationFrame(update);
+
+		if (!running) {
+			requestAnimationFrame(update);
+			running = true;
+		}
 	}
 });
 
