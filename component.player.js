@@ -2,7 +2,6 @@
 
 const Cell = require("./component.cell.js");
 
-const MIN_CELL_MASS  = 17.5;
 const MAX_CELL_COUNT = 16;
 
 class Player {
@@ -50,10 +49,7 @@ class Player {
 
 			// split the cell if able.
 
-			if (cell.mass / 2 < MIN_CELL_MASS)
-				continue;
-
-			this.cells.push(cell.split());
+			cell.split();
 		}
 	}
 

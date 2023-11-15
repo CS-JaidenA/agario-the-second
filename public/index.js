@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 const ws = new WebSocket(`${location.protocol === "http:" ? "ws" : "wss"}://${location.host}`);
 
@@ -29,6 +29,13 @@ const gridboxThickness = 1;
  */
 
 /**
+ * @typedef  {object} VirusPackage
+ * @property {number} radius
+ * @property {number} xPosition
+ * @property {number} yPosition
+ */
+
+/**
  * @typedef  {Object} Pellet
  * @property {string} color
  * @property {number} radius
@@ -49,6 +56,7 @@ const gridboxThickness = 1;
  * @property {number}   width
  * @property {number}   height
  * @property {number}   gridboxDimension
+ * @property {Virus[]}  viruses
  * @property {Pellet[]} pellets
  * @property {Object.<string, Player>} players
  */
@@ -56,7 +64,7 @@ const gridboxThickness = 1;
 /** @type {World} */
 let world     = {};
 let mainuuid  = '';
-
+let gridboxDimension = 0;
 /**
  * @typedef  {Object} Mouse
  * @property {number} x_px
@@ -115,78 +123,162 @@ function drawLine(coord1, coord2) {
 
 // draw canvas
 
+let prevViewportSize;
+
 function update() {
 	ctx.clearRect(0, 0, cnv.width, cnv.height);
 
-	const offset = world.gridboxDimension;
-	const border = { top: offset, left: offset,
-		right : world.width  * (world.gridboxDimension + gridboxThickness) + offset,
-		bottom: world.height * (world.gridboxDimension + gridboxThickness) + offset,
+	const mainPlayer = world.players[mainuuid];
+
+	const bounds = (function() {
+		let topmost    = +Infinity;
+		let leftmost   = +Infinity;
+		let rightmost  = -Infinity;
+		let bottommost = -Infinity;
+
+		mainPlayer.cells.forEach(cell => {
+			let top    = cell.yPosition - cell.radius;
+			let left   = cell.xPosition - cell.radius;
+			let right  = cell.xPosition + cell.radius;
+			let bottom = cell.yPosition + cell.radius;
+
+			if (top < topmost)
+				topmost = top;
+
+			if (left < leftmost)
+				leftmost = left;
+
+			if (right > rightmost)
+				rightmost = right;
+
+			if (bottom > bottommost)
+				bottommost = bottom;
+		});
+
+		return {
+			x:      (leftmost + rightmost) / 2,
+			y:      (topmost + bottommost) / 2,
+			top:    topmost,
+			left:   leftmost,
+			right:  rightmost,
+			bottom: bottommost,
+		};
+	})();
+
+	const newViewportSize = 60 + Math.max(bounds.right - bounds.left, bounds.bottom - bounds.top);
+
+	// smooth viewport size change
+
+	const viewportRate = Math.abs(prevViewportSize - newViewportSize) / 10;
+
+	const viewportSize = prevViewportSize
+		? prevViewportSize > newViewportSize
+			? (prevViewportSize - newViewportSize < viewportRate)
+				? newViewportSize
+				: prevViewportSize - viewportRate
+			: (newViewportSize - prevViewportSize < viewportRate)
+				? newViewportSize
+				: prevViewportSize + viewportRate
+		: newViewportSize;
+
+	prevViewportSize = viewportSize;
+
+	const [viewportWidth, viewportHeight] = cnv.width > cnv.height
+		? [viewportSize, viewportSize * cnv.height / cnv.width]
+		: [viewportSize * cnv.width / cnv.height, viewportSize];
+
+	const xViewportOffset = cnv.width  / 2 - bounds.x * gridboxDimension;
+	const yViewportOffset = cnv.height / 2 - bounds.y * gridboxDimension;
+
+	const [xOffset, yOffset] = cnv.width > cnv.height
+		? [xViewportOffset, (viewportSize - viewportHeight) / 2 + yViewportOffset]
+		: [(viewportSize - viewportWidth) / 2 + xViewportOffset, yViewportOffset];
+
+	gridboxDimension = cnv.width > cnv.height
+		? cnv.width  / viewportWidth
+		: cnv.height / viewportHeight;
+
+	const border = { top: yOffset, left: xOffset,
+		right : world.width  * gridboxDimension + xOffset,
+		bottom: world.height * gridboxDimension + yOffset,
 	};
 
 	// gridlines
 
 	// vertical
 	for (let i = 0; i <= world.width; i++) {
-		const x = i * (world.gridboxDimension + gridboxThickness) + border.left;
+		const x = i * gridboxDimension + border.left;
 
 		// dont render if outside of viewport
-		if (x < 0 || x > cnv.width)
-			return;
+		if (x < 0) continue;
+		if (x > cnv.width) break;
 
 		drawLine(new Coordinate(x, border.top), new Coordinate(x, border.bottom));
 	}
 
 	// horizontal
 	for (let i = 0; i <= world.height; i++) {
-		const y = i * (world.gridboxDimension + gridboxThickness) + border.top;
+		const y = i * gridboxDimension + border.top;
 
 		// dont render if outside of viewport
-		if (y < 0 || y > cnv.height)
-			return;
+		if (y < 0) continue;
+		if (y > cnv.height) break;
 
 		drawLine(new Coordinate(border.left, y), new Coordinate(border.right, y));
 	}
 
 	// pellets
 
-	world.pellets.forEach(pellet => drawCirc(new Coordinate(
-		pellet.xPosition * world.gridboxDimension + border.left,
-		pellet.yPosition * world.gridboxDimension + border.top,
-	), pellet.radius * world.gridboxDimension, pellet.color));
+	world.pellets.forEach(pellet => {
+		const x = pellet.xPosition * gridboxDimension + border.left;
+
+		if (x < 0 || x > cnv.width)
+			return;
+
+		const y = pellet.yPosition * gridboxDimension + border.top;
+
+		if (y < 0 || y > cnv.height)
+			return;
+
+		drawCirc(new Coordinate(x, y), pellet.radius * gridboxDimension, pellet.color);
+	});
 
 	// mass
 
 	world.mass.forEach(mass => {
-		const radius_px = mass.radius * world.gridboxDimension;
+		const radius_px = mass.radius * gridboxDimension;
 
-		const borderWidth = radius_px * 0.2; // total border width
-		const borderColor = `rgb(${mass.color.slice(4, -1).split(", ").map(value => value * 0.6).join(", ")})`;
+		const x = mass.xPosition * gridboxDimension + border.left;
 
-		const coordinate  = new Coordinate(
-			mass.xPosition * world.gridboxDimension + border.left,
-			mass.yPosition * world.gridboxDimension + border.top,
-		);
+		if (x + radius_px < 0 || x - radius_px > cnv.width)
+			return;
+
+		const y = mass.yPosition * gridboxDimension + border.top;
+
+		if (y + radius_px < 0 || y - radius_px > cnv.height)
+			return;
+
+		const coordinate  = new Coordinate(x, y);
 
 		// draw circles
 
-		drawCirc(coordinate, radius_px, borderColor);
-		drawCirc(coordinate, radius_px - borderWidth, mass.color);
+		drawCirc(coordinate, radius_px, `rgb(${mass.color.slice(4, -1).split(", ").map(value => value * 0.6).join(", ")})`); // outside
+		drawCirc(coordinate, radius_px - radius_px * 0.2, mass.color); // inside
 	});
 
 	// cells
 
-	// organize cells from smallest to largest
+	// organize cells and viruses from smallest to largest
 	// to draw bigger cells over smaller cells
 
-	const cells = [];
+	const circles = world.viruses;
 
 	for (const uuid in world.players) {
 		const player = world.players[uuid];
 
 		player.uuid = uuid;
 		player.cells.map(cell => cell.player = player);
-		cells.push(...player.cells);
+		circles.push(...player.cells);
 	}
 
 	// keep track of scores for score and leaderboard
@@ -194,73 +286,106 @@ function update() {
 	/** @type {Object} */
 	const scores = {};
 
-	ctx.strokeStyle = "black";
-	ctx.fillStyle   = "white";
-	ctx.lineWidth   = 3.5;
-
-	// sort by actual mass -- not animated mass
-	cells.sort((cellA, cellB) => cellA.mass - cellB.mass).forEach(cell => {
-		Object.hasOwn(scores, cell.player.uuid)
-			? scores[cell.player.uuid].score += cell.mass
-			: scores[cell.player.uuid] = { player: cell.player, score: cell.mass };
-
+	circles.sort((circleA, circleB) => circleA.radius - circleB.radius).forEach(circle => {
 		const borderWidth = 5; // total border width
-		const borderColor = `rgb(${cell.player.color.slice(4, -1).split(", ").map(value => value * 0.6).join(", ")})`;
 
-		const coordinate  = new Coordinate(
-			cell.xPosition * world.gridboxDimension + border.left,
-			cell.yPosition * world.gridboxDimension + border.top,
-		);
+		// cell
+		if (Object.hasOwn(circle, "player")) {
+			ctx.strokeStyle = "black";
+			ctx.fillStyle   = "white";
+			ctx.lineWidth   = 3.5;
+
+			Object.hasOwn(scores, circle.player.uuid)
+				? scores[circle.player.uuid].score += circle.mass
+				: scores[circle.player.uuid] = { player: circle.player, score: circle.mass };
+
+			const borderColor = `rgb(${circle.player.color.slice(4, -1).split(", ").map(value => value * 0.6).join(", ")})`;
+
+			const radius_px = circle.radius * gridboxDimension;
+
+			const x = circle.xPosition * gridboxDimension + border.left;
+
+			if (x + radius_px < 0 || x - radius_px > cnv.width)
+				return;
+
+			const y = circle.yPosition * gridboxDimension + border.top;
+
+			if (y + radius_px < 0 || y - radius_px > cnv.height)
+				return;
+
+			const coordinate = new Coordinate(x, y);
+
+			// draw circles
+
+			drawCirc(coordinate, radius_px + borderWidth, borderColor);
+			drawCirc(coordinate, radius_px, circle.player.color);
+
+			// draw name
+
+			ctx.font = "32px Ubuntu";
+			const nameWidth = ctx.measureText(circle.player.name).width;
+			ctx.font = `${Math.max(18, nameWidth < radius_px * 2 ? 32 : 32 * radius_px * 2 / nameWidth)}px Ubuntu`;
+
+			const nameMetrics = ctx.measureText(circle.player.name);
+
+			const nameX = coordinate.x - nameMetrics.width / 2;
+			const nameY = coordinate.y + (nameMetrics.fontBoundingBoxAscent + nameMetrics.fontBoundingBoxDescent) / 2 - (function() {
+				if (circle.player.uuid !== mainuuid)
+					return 0;
+
+				const lineWidth = ctx.lineWidth;
+				const font      = ctx.font;
+
+				// mass
+
+				const mass = String(Math.floor(circle.mass));
+
+				ctx.lineWidth = 2;
+				ctx.font      = "18px Ubuntu";
+
+				const massMetrics = ctx.measureText(mass);
+				const massHeight  = massMetrics.fontBoundingBoxAscent - massMetrics.fontBoundingBoxDescent;
+				const nameHeight  = nameMetrics.fontBoundingBoxAscent - nameMetrics.fontBoundingBoxDescent;
+
+				const offset  = (nameHeight + massHeight) / 2;
+				const massX   = coordinate.x - massMetrics.width / 2;
+				const massY   = coordinate.y + (massMetrics.fontBoundingBoxAscent + massMetrics.fontBoundingBoxDescent) / 2 + offset;
+
+				ctx.strokeText(mass, massX, massY);
+				ctx.fillText(mass, massX, massY);
+
+				ctx.lineWidth = lineWidth;
+				ctx.font      = font;
+
+				return offset;
+			})();
+
+			ctx.strokeText(circle.player.name, nameX, nameY);
+			ctx.fillText(circle.player.name, nameX, nameY);
+
+			return;
+		}
+
+		// virus
+
+		const radius_px = circle.radius * gridboxDimension;
+
+		const x = circle.xPosition * gridboxDimension + border.left;
+
+		if (x + radius_px < 0 || x - radius_px > cnv.width)
+			return;
+
+		const y = circle.yPosition * gridboxDimension + border.top;
+
+		if (y + radius_px < 0 || y - radius_px > cnv.height)
+			return;
+
+		const coordinate  = new Coordinate(x, y);
 
 		// draw circles
 
-		const radius_px = cell.radius * world.gridboxDimension;
-
-		drawCirc(coordinate, radius_px + borderWidth, borderColor);
-		drawCirc(coordinate, radius_px, cell.player.color);
-
-		// draw name
-
-		ctx.font = "32px Ubuntu";
-		const nameWidth = ctx.measureText(cell.player.name).width;
-		ctx.font = `${Math.max(18, nameWidth < radius_px * 2 ? 32 : 32 * radius_px * 2 / nameWidth)}px Ubuntu`;
-
-		const nameMetrics = ctx.measureText(cell.player.name);
-
-		const nameX = coordinate.x - nameMetrics.width / 2;
-		const nameY = coordinate.y + (nameMetrics.fontBoundingBoxAscent + nameMetrics.fontBoundingBoxDescent) / 2 - (function() {
-			if (cell.player.uuid !== mainuuid)
-				return 0;
-
-			const lineWidth = ctx.lineWidth;
-			const font      = ctx.font;
-
-			// mass
-
-			const mass = String(Math.floor(cell.mass));
-
-			ctx.lineWidth = 2;
-			ctx.font      = "18px Ubuntu";
-
-			const massMetrics = ctx.measureText(mass);
-			const massHeight  = massMetrics.fontBoundingBoxAscent - massMetrics.fontBoundingBoxDescent;
-			const nameHeight  = nameMetrics.fontBoundingBoxAscent - nameMetrics.fontBoundingBoxDescent;
-
-			const offset  = (nameHeight + massHeight) / 2;
-			const massX   = coordinate.x - massMetrics.width / 2;
-			const massY   = coordinate.y + (massMetrics.fontBoundingBoxAscent + massMetrics.fontBoundingBoxDescent) / 2 + offset;
-
-			ctx.strokeText(mass, massX, massY);
-			ctx.fillText(mass, massX, massY);
-
-			ctx.lineWidth = lineWidth;
-			ctx.font      = font;
-
-			return offset;
-		})();
-
-		ctx.strokeText(cell.player.name, nameX, nameY);
-		ctx.fillText(cell.player.name, nameX, nameY);
+		drawCirc(coordinate, radius_px, "rgb(31, 153, 31)"); // outside
+		drawCirc(coordinate, radius_px - borderWidth, "#33FF33"); // inside
 	});
 
 	// score
@@ -285,8 +410,8 @@ function update() {
 	// mouse
 
 	ws.send(JSON.stringify({ type: "mouse", load: {
-		xPosition: (mouse.x_px - border.left) / world.gridboxDimension,
-		yPosition: (mouse.y_px - border.top ) / world.gridboxDimension,
+		xPosition: (mouse.x_px - border.left) / gridboxDimension,
+		yPosition: (mouse.y_px - border.top ) / gridboxDimension,
 	}}));
 }
 

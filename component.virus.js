@@ -1,19 +1,15 @@
 "use strict";
 
 /**
- * @typedef  {object} MassPackage
- * @property {number} color
+ * @typedef  {object} VirusPackage
  * @property {number} radius
  * @property {number} xPosition
  * @property {number} yPosition
  */
 
-class Mass {
+class Virus {
 	/** @type {number} */
 	mass;
-
-	/** @type {string} */
-	color;
 
 	/** @type {number} */
 	radius;
@@ -33,9 +29,8 @@ class Mass {
 	/** @type {World} */
 	parent;
 
-	/** @returns {MassPackage} */
+	/** @returns {VirusPackage} */
 	pack = () => ({
-		color:     this.color,
 		radius:    this.radius,
 		xPosition: this.xPosition,
 		yPosition: this.yPosition,
@@ -56,12 +51,12 @@ class Mass {
 		const scalarXMomentum = Math.abs(this.xMomentum);
 		const scalarYMomentum = Math.abs(this.yMomentum);
 
-		if (scalarXMomentum > Mass.resistance)
-			this.xMomentum  = Math.sign(this.xMomentum) * (scalarXMomentum - Mass.resistance);
+		if (scalarXMomentum > Virus.resistance)
+			this.xMomentum  = Math.sign(this.xMomentum) * (scalarXMomentum - Virus.resistance);
 		else this.xMomentum = 0;
 
-		if (scalarYMomentum > Mass.resistance)
-			this.yMomentum  = Math.sign(this.yMomentum) * (scalarYMomentum - Mass.resistance);
+		if (scalarYMomentum > Virus.resistance)
+			this.yMomentum  = Math.sign(this.yMomentum) * (scalarYMomentum - Virus.resistance);
 		else this.yMomentum = 0;
 
 		// handle collisions with the world border
@@ -75,23 +70,65 @@ class Mass {
 			[this.yPosition, this.yMomentum] = [0, Math.abs(this.yMomentum)];
 		else if (this.yPosition > this.parent.height)
 			[this.yPosition, this.yMomentum] = [this.parent.height, -Math.abs(this.yMomentum)];
+
+		// check for mass collision (TEMPORARY)
+
+		for (let i = 0; i < this.parent.mass.length; i++) {
+			const mass = this.parent.mass[i];
+
+			const distance = Math.hypot(
+				this.xPosition - mass.xPosition,
+				this.yPosition - mass.yPosition,
+			);
+
+			const overlapDistance = this.radius + mass.radius;
+
+			if (distance >= overlapDistance)
+				continue;
+
+			// overlap percentage:
+			// the amount in gridboxes the mass is being overlapped divided by
+			// the diameter in gridboxes of the mass
+
+			const overlapPercentage = (overlapDistance - distance) / mass.diameter;
+
+			if (overlapPercentage >= 0.75) {
+				this.mass += mass.mass;
+
+				// split virus if applicable
+
+				if (this.mass > Virus.mass * 2) {
+					this.mass -= Virus.mass;
+
+					const scalarMassXMomentum = Math.abs(mass.xMomentum);
+					const scalarMassYMomentum = Math.abs(mass.yMomentum);
+
+					this.parent.viruses.push(new Virus(
+						Math.sign(mass.xMomentum) * (scalarMassXMomentum > scalarMassYMomentum ? 1 : scalarMassXMomentum / scalarMassYMomentum),
+						Math.sign(mass.yMomentum) * (scalarMassYMomentum > scalarMassXMomentum ? 1 : scalarMassYMomentum / scalarMassXMomentum),
+						this.xPosition, this.yPosition, this.parent
+					));
+				}
+
+				this.parent.mass.splice(i, 1);
+				i--;
+			}
+		}
 	};
 
 	/**
-	 * @param {string} color
 	 * @param {number} xMomentum
 	 * @param {number} yMomentum
 	 * @param {number} xPosition
 	 * @param {number} yPosition
 	 * @param {World}  world
 	 */
-	constructor(color, xMomentum, yMomentum, xPosition, yPosition, world) {
+	constructor(xMomentum, yMomentum, xPosition, yPosition, world) {
 		this.parent    = world;
 
-		this.mass      = Mass.mass;
-		this.radius    = Mass.radius;
+		this.mass      = Virus.mass;
+		this.radius    = Math.sqrt(Virus.mass * 100) / this.parent.gridboxDimension;
 
-		this.color     = color;
 		this.xMomentum = xMomentum;
 		this.yMomentum = yMomentum;
 		this.xPosition = xPosition;
@@ -103,10 +140,10 @@ class Mass {
 	}
 
 	/** @type {number} */
-	static mass = 20;
+	static mass = 125;
 
 	/** @type {number} */
-	static radius = 0.85;
+	static momentum = 1;
 
 	/**
 	 * @type {number}
@@ -115,4 +152,4 @@ class Mass {
 	static resistance = 0.025;
 }
 
-module.exports = Mass;
+module.exports = Virus;

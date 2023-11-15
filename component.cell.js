@@ -43,6 +43,12 @@ class Cell {
 	 */
 	cooldown;
 
+	/** @type {number} */
+	animatedMass = 0;
+
+	/** @type {number} */
+	animatedRadius = 0;
+
 	/** @type {Player} */
 	parent;
 
@@ -51,8 +57,8 @@ class Cell {
 
 	/** @returns {CellPackage} */
 	pack = () => ({
-		mass:      this.mass,
-		radius:    this.radius,
+		mass:      this.animatedMass,
+		radius:    this.animatedRadius,
 		xPosition: this.xPosition,
 		yPosition: this.yPosition,
 	});
@@ -65,11 +71,12 @@ class Cell {
 		// mass decay
 
 		this.mass *= 0.998**(interval / 1000);
+		if (this.mass < 10) this.mass = 10;
 
 		// update merge cooldown
 
-		if (this.mergeCooldown_ms > 0)
-			this.mergeCooldown_ms -= interval;
+		if (this.cooldown > 0)
+			this.cooldown -= interval;
 
 		// calculate the slowing factor
 		// cells decrease in speed when hovered over by the mouse
@@ -95,7 +102,7 @@ class Cell {
 
 		// calculate speed and update cell position accordingly
 
-		const speed = this.mass / this.mass**1.44 * slowingFactor;
+		const speed = 2.2 * this.mass**-0.449 * slowingFactor;
 
 		const xMouseDistance = Math.abs(this.xPosition - this.parent.mouse.xPosition);
 		const yMouseDistance = Math.abs(this.yPosition - this.parent.mouse.yPosition);
@@ -115,23 +122,34 @@ class Cell {
 			? this.xPosition =  this.parent.mouse.xPosition
 			: this.xPosition += this.xVelocity;
 
-		yMouseDistance < this.xVelocity
+		yMouseDistance < this.yVelocity
 			? this.yPosition =  this.parent.mouse.yPosition
 			: this.yPosition += this.yVelocity;
 
 		// apply momentum
 
+		console.log("c", this.xPosition, this.xMomentum);
+
 		this.xPosition += this.xMomentum;
 		this.yPosition += this.yMomentum;
+
+		console.log("d", this.xPosition, this.xMomentum, this.parent.mouse.xPosition, this.xVelocity, xMouseDistance);
+
+		if (isNaN(this.xPosition))
+			process.exit(1);
 
 		// update momentum
 
 		const scalarXMomentum = Math.abs(this.xMomentum);
 		const scalarYMomentum = Math.abs(this.yMomentum);
 
+		console.log("a", this.xMomentum, scalarXMomentum, Cell.resistance);
+
 		if (scalarXMomentum > Cell.resistance)
 			this.xMomentum  = Math.sign(this.xMomentum) * (scalarXMomentum - Cell.resistance);
 		else this.xMomentum = 0;
+
+		console.log("b", this.xMomentum);
 
 		if (scalarYMomentum > Cell.resistance)
 			this.yMomentum  = Math.sign(this.yMomentum) * (scalarYMomentum - Cell.resistance);
@@ -151,7 +169,7 @@ class Cell {
 
 			// check if merging conditions are met if both are in a mergeable state
 
-			if (cell.mergeCooldown_ms <= 0 && this.mergeCooldown_ms <= 0) {
+			if (cell.cooldown <= 0 && this.cooldown <= 0 && this.mass + cell.mass <= Cell.maxMass) {
 				const distance = Math.hypot(
 					this.xPosition - cell.xPosition,
 					this.yPosition - cell.yPosition,
@@ -206,8 +224,13 @@ class Cell {
 				yOverlap / overlapVector * overlapAmount,
 			] : [this.diameter, this.diameter];
 
-			this.xPosition += xCorrection;
-			this.yPosition += yCorrection;
+			if (Math.abs(xCorrection) > Math.abs(this.xVelocity * 2)) {
+				this.xPosition += Math.sign(xCorrection) * Math.abs(this.xVelocity * 2);
+			} else this.xPosition += xCorrection;
+
+			if (Math.abs(yCorrection) > Math.abs(this.yVelocity * 2)) {
+				this.yPosition += Math.sign(yCorrection) * Math.abs(this.yVelocity * 2);
+			} else this.yPosition += yCorrection;
 		});
 
 		// handle collisions with the world border
@@ -278,6 +301,96 @@ class Cell {
 				i--;
 			}
 		}
+
+		// check for virus collision (TEMPORARY)
+
+		for (let i = 0; i < this.parent.parent.viruses.length; i++) {
+			const virus = this.parent.parent.viruses[i];
+
+			if (this.mass < virus.mass * 1.25)
+				continue;
+
+			const distance = Math.hypot(
+				this.xPosition - virus.xPosition,
+				this.yPosition - virus.yPosition,
+			);
+
+			const overlapDistance = this.radius + virus.radius;
+
+			if (distance >= overlapDistance)
+				continue;
+
+			// overlap percentage:
+			// the amount in gridboxes the mass is being overlapped divided by
+			// the diameter in gridboxes of the mass
+
+			const overlapPercentage = (overlapDistance - distance) / virus.diameter;
+
+			if (overlapPercentage >= 0.75) {
+				this.mass += virus.mass;
+				this.parent.parent.viruses.splice(i, 1);
+				i--;
+
+				this.split();
+			}
+		}
+
+		// check for player collision (TEMPORARY)
+
+		for (const uuid in this.parent.parent.players) {
+			/** @type {Player} */
+			const player = this.parent.parent.players[uuid];
+
+			if (player === this.parent)
+				continue;
+
+			for (let i = 0; i < player.cells.length; i++) {
+				const cell = player.cells[i];
+
+				if (this.mass < cell.mass * 1.25)
+					continue;
+
+				const distance = Math.hypot(
+					this.xPosition - cell.xPosition,
+					this.yPosition - cell.yPosition,
+				);
+
+				const overlapDistance = this.radius + cell.radius;
+
+				if (distance >= overlapDistance)
+					continue;
+
+				// overlap percentage:
+				// the amount in gridboxes the mass is being overlapped divided by
+				// the diameter in gridboxes of the mass
+
+				const overlapPercentage = (overlapDistance - distance) / cell.diameter;
+
+				if (overlapPercentage >= 0.75) {
+					this.mass += cell.mass;
+					player.cells.splice(i, 1);
+					i--;
+				}
+			}
+		}
+
+		// max mass
+
+		if (this.mass > Cell.maxMass) {
+			this.mass = Cell.maxMass;
+			this.split();
+		}
+
+		// display mass
+
+		const rate = this.mass / 7;
+
+		if (this.animatedMass > this.mass)
+			this.animatedMass = this.animatedMass - this.mass > rate ? this.animatedMass - rate : this.mass;
+		else if (this.animatedMass < this.mass)
+			this.animatedMass = this.mass - this.animatedMass > rate ? this.animatedMass + rate : this.mass;
+
+		this.animatedRadius = Math.sqrt(this.animatedMass * 100) / this.parent.parent.gridboxDimension;
 	}
 
 	/** @returns {undefined} */
@@ -308,15 +421,21 @@ class Cell {
 
 	/** @returns {Cell} */
 	split = () => {
+		if (this.mass / 2 < Cell.minMass)
+			return;
+
+		if (this.parent.cells.length >= 16)
+			return;
+
 		this.mass /= 2;
 
 		const scalarXVelocity = Math.abs(this.xVelocity);
 		const scalarYVelocity = Math.abs(this.yVelocity);
 
-		return new Cell(this.mass,
+		this.parent.cells.push(new Cell(this.mass,
 			Math.sign(this.xVelocity) * Cell.momentum * (scalarXVelocity > scalarYVelocity ? 1 : scalarXVelocity / scalarYVelocity),
 			Math.sign(this.yVelocity) * Cell.momentum * (scalarYVelocity > scalarXVelocity ? 1 : scalarYVelocity / scalarXVelocity),
-		this.xPosition, this.yPosition, this.parent);
+		this.xPosition, this.yPosition, this.parent));
 	}
 
 	/**
@@ -336,7 +455,8 @@ class Cell {
 		this.xPosition = xPosition;
 		this.yPosition = yPosition;
 
-		this.cooldown  = MIN_MERGE_COOLDOWN_MS + MERGE_COOLDOWN_FACTOR * this.mass;
+		this.cooldown     = MIN_MERGE_COOLDOWN_MS + MERGE_COOLDOWN_FACTOR * this.mass;
+		this.animatedMass = this.mass;
 	}
 
 	get mass() {
@@ -352,6 +472,12 @@ class Cell {
 		this.#mass  = mass;
 		this.radius = Math.sqrt(mass * 100) / this.parent.parent.gridboxDimension;
 	}
+
+	/** @type {number} */
+	static maxMass = 22500;
+
+	/** @type {number} */
+	static minMass = 17.5;
 
 	/** @type {number} */
 	static ejectMin = 35;
