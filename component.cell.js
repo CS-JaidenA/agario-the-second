@@ -43,12 +43,6 @@ class Cell {
 	 */
 	cooldown;
 
-	/** @type {number} */
-	animatedMass = 0;
-
-	/** @type {number} */
-	animatedRadius = 0;
-
 	/** @type {Player} */
 	parent;
 
@@ -57,8 +51,8 @@ class Cell {
 
 	/** @returns {CellPackage} */
 	pack = () => ({
-		mass:      this.animatedMass,
-		radius:    this.animatedRadius,
+		mass:      this.mass,
+		radius:    this.radius,
 		xPosition: this.xPosition,
 		yPosition: this.yPosition,
 	});
@@ -102,7 +96,7 @@ class Cell {
 
 		// calculate speed and update cell position accordingly
 
-		const speed = 2.2 * this.mass**-0.449 * slowingFactor;
+		const speed = (0.5 * 0.91**this.radius + 0.13) / 2;
 
 		const xMouseDistance = Math.abs(this.xPosition - this.parent.mouse.xPosition);
 		const yMouseDistance = Math.abs(this.yPosition - this.parent.mouse.yPosition);
@@ -307,7 +301,7 @@ class Cell {
 		for (let i = 0; i < this.parent.parent.viruses.length; i++) {
 			const virus = this.parent.parent.viruses[i];
 
-			if (this.mass < virus.mass * 1.25)
+			if (this.mass < virus.mass * 1.1)
 				continue;
 
 			const distance = Math.hypot(
@@ -328,10 +322,37 @@ class Cell {
 
 			if (overlapPercentage >= 0.75) {
 				this.mass += virus.mass;
+
 				this.parent.parent.viruses.splice(i, 1);
 				i--;
 
-				this.split();
+				const size = Math.max(this.mass * 0.02, Cell.minMass);
+
+				const number = Math.min(Math.floor(this.mass / size), 16 - this.parent.cells.length);
+
+				if (number <= 1)
+					continue;
+
+				this.mass -= size * number;
+
+				this.parent.cells.push(new Cell(
+					this.mass / 3,
+					Cell.momentum * Math.random() * 2 - 1,
+					Cell.momentum * Math.random() * 2 - 1,
+					this.xPosition, this.yPosition, this.parent
+				));
+
+				this.mass *= 2/3;
+
+				// i starts at 1 since the first cell is 1/3 the size of the main cell
+
+				for (let i = 1; i < number; i++)
+					this.parent.cells.push(new Cell(
+						size,
+						Cell.momentum * Math.random() * 2 - 1,
+						Cell.momentum * Math.random() * 2 - 1,
+						this.xPosition, this.yPosition, this.parent
+					));
 			}
 		}
 
@@ -347,7 +368,7 @@ class Cell {
 			for (let i = 0; i < player.cells.length; i++) {
 				const cell = player.cells[i];
 
-				if (this.mass < cell.mass * 1.25)
+				if (this.mass < cell.mass * 1.1)
 					continue;
 
 				const distance = Math.hypot(
@@ -380,17 +401,6 @@ class Cell {
 			this.mass = Cell.maxMass;
 			this.split();
 		}
-
-		// display mass
-
-		const rate = this.mass / 7;
-
-		if (this.animatedMass > this.mass)
-			this.animatedMass = this.animatedMass - this.mass > rate ? this.animatedMass - rate : this.mass;
-		else if (this.animatedMass < this.mass)
-			this.animatedMass = this.mass - this.animatedMass > rate ? this.animatedMass + rate : this.mass;
-
-		this.animatedRadius = Math.sqrt(this.animatedMass * 100) / this.parent.parent.gridboxDimension;
 	}
 
 	/** @returns {undefined} */

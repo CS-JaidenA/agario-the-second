@@ -12,6 +12,9 @@ const score       = document.getElementById("score");
 const gridboxColour    = "#313131";
 const gridboxThickness = 1;
 
+const img = new Image();
+img.src = "./virus.svg";
+
 /**
  * @typedef  {object} CellPackage
  * @property {number} mass
@@ -63,7 +66,6 @@ const gridboxThickness = 1;
 
 /** @type {World} */
 let world     = {};
-let running   = false;
 let mainuuid  = '';
 let gridboxDimension = 0;
 /**
@@ -385,9 +387,6 @@ function update() {
 
 		// draw circles
 
-		const img = new Image();
-		img.src = "./virus.svg";
-
 		ctx.drawImage(img, coordinate.x - radius_px, coordinate.y - radius_px, radius_px * 2, radius_px * 2);
 	});
 
@@ -416,10 +415,6 @@ function update() {
 		xPosition: (mouse.x_px - border.left) / gridboxDimension,
 		yPosition: (mouse.y_px - border.top ) / gridboxDimension,
 	}}));
-
-	// loop
-
-	requestAnimationFrame(update);
 }
 
 ws.addEventListener("message", e => {
@@ -430,11 +425,7 @@ ws.addEventListener("message", e => {
 
 	if (message.pack) {
 		world = { ...world, ...message.pack };
-
-		if (!running) {
-			requestAnimationFrame(update);
-			running = true;
-		}
+		requestAnimationFrame(update);
 	}
 });
 
