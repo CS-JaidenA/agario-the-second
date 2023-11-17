@@ -150,7 +150,7 @@ class Virus {
 	}
 
 	/** @type {number} */
-	static mass = 125;
+	static mass = 100;
 
 	/** @type {number} */
 	static momentum = 1;
