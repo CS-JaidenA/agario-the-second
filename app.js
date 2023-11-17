@@ -43,6 +43,9 @@ wss.on("connection", ws => {
 	ws.on("message", message => {
 		message = JSON.parse(message);
 
+		if (message.type === "name")
+			return world.players[uuid].name = message.load;
+
 		if (message.type === "mouse")
 			return world.players[uuid].mouse = message.load;
 

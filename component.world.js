@@ -5,11 +5,11 @@ const Virus  = require("./component.virus.js");
 const Pellet = require("./component.pellet.js");
 const Player = require("./component.player.js");
 
-const DEFAULT_WORLD_SIZE    = 200;
-const DEFAULT_SPAWN_MASS    = 60;
-const DEFAULT_VIRUS_COUNT   = 60;
-const DEFAULT_PELLET_COUNT  = 6000;
-const DEFAULT_GRIDBOX_SIZE  = 50;
+const DEFAULT_WORLD_SIZE    = 150;
+const DEFAULT_SPAWN_MASS    = 25;
+const DEFAULT_VIRUS_COUNT   = 25;
+const DEFAULT_PELLET_COUNT  = 2500;
+const DEFAULT_GRIDBOX_SIZE  = 40;
 
 class WorldPackage {
 	/** @type {Mass[]} */

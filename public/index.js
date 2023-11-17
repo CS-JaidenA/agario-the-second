@@ -1,6 +1,6 @@
 "use strict";
 
-const ws = new WebSocket(`${location.protocol === "http:" ? "ws" : "wss"}://${location.host}`);
+let ws;
 
 /** @type {HTMLCanvasElement} */
 const cnv = document.getElementById("canvas");
@@ -68,6 +68,7 @@ img.src = "./virus.svg";
 let world     = {};
 let mainuuid  = '';
 let gridboxDimension = 0;
+
 /**
  * @typedef  {Object} Mouse
  * @property {number} x_px
@@ -76,11 +77,6 @@ let gridboxDimension = 0;
 
 /** @type {Mouse} */
 const mouse = {};
-
-addEventListener("mousemove", event => {
-	mouse.x_px = event.clientX;
-	mouse.y_px = event.clientY;
-});
 
 class Coordinate {
 	x;
@@ -325,9 +321,12 @@ function update() {
 
 			// draw name
 
-			ctx.font = "32px Ubuntu";
+			const min_font_size = 16;
+			const max_font_size = 24;
+
+			ctx.font = `${max_font_size}px Ubuntu`;
 			const nameWidth = ctx.measureText(circle.player.name).width;
-			ctx.font = `${Math.max(18, nameWidth < radius_px * 2 ? 32 : 32 * radius_px * 2 / nameWidth)}px Ubuntu`;
+			ctx.font = `${Math.max(min_font_size, nameWidth < radius_px * 2 ? max_font_size : max_font_size * radius_px * 2 / nameWidth)}px Ubuntu`;
 
 			const nameMetrics = ctx.measureText(circle.player.name);
 
@@ -344,7 +343,7 @@ function update() {
 				const mass = String(Math.floor(circle.mass));
 
 				ctx.lineWidth = 2;
-				ctx.font      = "18px Ubuntu";
+				ctx.font      = `${min_font_size}px Ubuntu`;
 
 				const massMetrics = ctx.measureText(mass);
 				const massHeight  = massMetrics.fontBoundingBoxAscent - massMetrics.fontBoundingBoxDescent;
@@ -404,7 +403,7 @@ function update() {
 
 	for (let i = 0; i < topTenPlayers.length; i++) {
 		const player = topTenPlayers[i].player;
-		innerHtml += `<div ${player.uuid === mainuuid ? 'class="highlight"' : ''}>${i + 1}. ${player.name}</div>\n`;
+		innerHtml += `<div ${player.uuid === mainuuid ? 'class="highlight"' : ''}>${i + 1}. ${player.name === '' ? "An unnamed cell" : player.name}</div>\n`;
 	}
 
 	leaderboard.innerHTML = innerHtml;
@@ -417,44 +416,65 @@ function update() {
 	}}));
 }
 
-ws.addEventListener("message", e => {
-	const message = JSON.parse(e.data);
+const playButton = document.getElementById("play");
 
-	if (message.uuid)
-		mainuuid = message.uuid;
+document.getElementById("play").onclick = () => {
+	start(document.getElementById("name").value);
+	document.getElementById("menu").style.display = "none";
+}
 
-	if (message.pack) {
-		world = { ...world, ...message.pack };
-		requestAnimationFrame(update);
-	}
-});
+function start(name) {
+	ws = new WebSocket(`${location.protocol === "http:" ? "ws" : "wss"}://${location.host}`);
 
-window.addEventListener("resize", () => {
-	cnv.width  = Math.floor(window.innerWidth  * window.devicePixelRatio);
-	cnv.height = Math.floor(window.innerHeight * window.devicePixelRatio);
-});
+	addEventListener("mousemove", event => {
+		mouse.x_px = event.clientX;
+		mouse.y_px = event.clientY;
+	});
 
-window.dispatchEvent(new Event("resize"));
+	ws.addEventListener("message", e => {
+		const message = JSON.parse(e.data);
 
-let wPressed     = false;
-let spacePressed = false;
+		if (message.uuid)
+			mainuuid = message.uuid;
 
-window.addEventListener("keyup", event => {
-	if (event.code === "KeyW") wPressed = false;
-	else if (event.code === "Space") spacePressed = false;
-});
+		if (message.pack) {
+			world = { ...world, ...message.pack };
+			requestAnimationFrame(update);
+		}
+	});
 
-window.addEventListener("keydown", event => {
-	if (event.code === "KeyW") {
-		if (wPressed) return;
+	ws.onopen = () => ws.send(JSON.stringify({
+		type: "name",
+		load: name,
+	}));
 
-		wPressed = true;
-		ws.send(JSON.stringify({ type: "eject" }));
-	}
-	else if (event.code === "Space") {
-		if (spacePressed) return;
+	window.addEventListener("resize", () => {
+		cnv.width  = Math.floor(window.innerWidth  * window.devicePixelRatio);
+		cnv.height = Math.floor(window.innerHeight * window.devicePixelRatio);
+	});
 
-		spacePressed = true;
-		ws.send(JSON.stringify({ type: "split" }));
-	}
-});
+	window.dispatchEvent(new Event("resize"));
+
+	let wPressed     = false;
+	let spacePressed = false;
+
+	window.addEventListener("keyup", event => {
+		if (event.code === "KeyW") wPressed = false;
+		else if (event.code === "Space") spacePressed = false;
+	});
+
+	window.addEventListener("keydown", event => {
+		if (event.code === "KeyW") {
+			if (wPressed) return;
+
+			wPressed = true;
+			ws.send(JSON.stringify({ type: "eject" }));
+		}
+		else if (event.code === "Space") {
+			if (spacePressed) return;
+
+			spacePressed = true;
+			ws.send(JSON.stringify({ type: "split" }));
+		}
+	});
+}
