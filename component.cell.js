@@ -96,7 +96,7 @@ class Cell {
 
 		// calculate speed and update cell position accordingly
 
-		const speed = (0.5 * 0.91**this.radius + 0.13) / 2;
+		const speed = (0.5 * 0.91**this.radius + 0.13) / 2 * slowingFactor;
 
 		const xMouseDistance = Math.abs(this.xPosition - this.parent.mouse.xPosition);
 		const yMouseDistance = Math.abs(this.yPosition - this.parent.mouse.yPosition);
